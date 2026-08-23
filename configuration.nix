@@ -6,6 +6,7 @@
   ];
 
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.configurationLimit = 3;
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "nixos";
@@ -31,17 +32,41 @@
   services.xserver.xkb.layout = "br";
   console.keyMap = "br-abnt2";
 
+  # Ativa o NumLock nos TTYs/consoles virtuais durante a inicialização
+  systemd.services.numLockOnTty = {
+    description = "Ativar NumLock nos TTYs";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      ExecStart = pkgs.writeShellScript "numlock-on-tty" ''
+        for tty in /dev/tty[1-6]; do
+          ${pkgs.kbd}/bin/setleds -D +num < "$tty" 2>/dev/null || true
+        done
+      '';
+      Type = "oneshot";
+    };
+  };
+
   users.users.william = {
     isNormalUser = true;
     description = "William";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "i2c" "docker" ];
     shell = pkgs.fish;
   };
 
   programs.fish.enable = true;
 
   nixpkgs.config.allowUnfree = true;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix = {
+    settings = {
+      experimental-features = [ "nix-command" "flakes" ];
+      auto-optimise-store = true;
+    };
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 7d";
+    };
+  };
 
   # Sessão Wayland com integração systemd; o Caelestia é iniciado pelo Hyprland.
   programs.hyprland = {
@@ -51,26 +76,82 @@
   };
 
   programs.dconf.enable = true;
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true;
+    dedicatedServer.openFirewall = true;
+    localNetworkGameTransfers.openFirewall = true;
+  };
   security.polkit.enable = true;
+  services.gvfs.enable = true;
+  services.udisks2.enable = true;
   services.pipewire = {
     enable = true;
     pulse.enable = true;
     alsa.enable = true;
     alsa.support32Bit = true;
   };
-  hardware.graphics.enable = true;
+  # Aceleração gráfica e drivers NVIDIA
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+  };
+
+  services.xserver.videoDrivers = [ "nvidia" ];
+
+  hardware.nvidia = {
+    # Modesetting é obrigatório para Wayland / Hyprland
+    modesetting.enable = true;
+
+    # Gerenciamento de energia
+    powerManagement.enable = false;
+    powerManagement.finegrained = false;
+
+    # Driver proprietário oficial
+    open = false;
+
+    # Utilitário nvidia-settings
+    nvidiaSettings = true;
+
+    # Pacote estável do driver NVIDIA
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+  };
+
+  hardware.i2c.enable = true;
+
+  # Virtualização e Docker
+  virtualisation.docker = {
+    enable = true;
+    autoPrune = {
+      enable = true;
+      dates = "weekly";
+    };
+  };
+
+  # Suporte a GPU NVIDIA em containers Docker (CDI)
+  hardware.nvidia-container-toolkit.enable = true;
+
+  # Habilita suporte a Bluetooth
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+  services.blueman.enable = true;
 
   xdg.portal = {
     enable = true;
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
-  services.greetd = {
+  services.displayManager.sddm = {
     enable = true;
-    settings.default_session = {
-      user = "william";
-      command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --remember-session --cmd 'uwsm start hyprland-uwsm.desktop'";
-    };
+    wayland.enable = true;
+    theme = "sddm-astronaut-theme";
+    extraPackages = with pkgs.kdePackages; [
+      qtsvg
+      qtmultimedia
+      qtvirtualkeyboard
+    ];
   };
 
   environment.systemPackages = with pkgs; [
@@ -78,6 +159,7 @@
     gh
     wget
     curl
+    docker-compose
     kitty
     fish
     fastfetch
@@ -87,11 +169,13 @@
     swappy
     pavucontrol
     brightnessctl
+    ddcutil
     playerctl
     networkmanagerapplet
     material-symbols
     nerd-fonts.caskaydia-cove
     bibata-cursors
+    sddm-astronaut
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
@@ -120,6 +204,9 @@
     HYPRCURSOR_THEME = "Bibata-Modern-Classic";
     HYPRCURSOR_SIZE = "24";
     TERMINAL = "kitty";
+    LIBVA_DRIVER_NAME = "nvidia";
+    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    NVD_BACKEND = "direct";
   };
 
   system.stateVersion = "26.05";

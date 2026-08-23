@@ -1,0 +1,50 @@
+{
+  "theme": {
+    "enableQt": true,
+    "enableGtk": true,
+    "iconThemeDark": "Papirus-Dark",
+    "iconThemeLight": "Papirus-Light",
+    "postHook": "bash /home/william/.config/caelestia/sync-kde.sh"
+  },
+  "toggles": {
+    "music": {
+      "spotify": {
+        "enable": true,
+        "match": [
+          { "class": "Spotify" },
+          { "class": "spotify" },
+          { "initialTitle": "Spotify" },
+          { "initialTitle": "Spotify Free" },
+          { "initialTitle": "Spotify Premium" }
+        ],
+        "command": ["spotify"],
+        "move": true
+      }
+    },
+    "communication": {
+      "zapzap": {
+        "enable": true,
+        "match": [
+          { "class": "zapzap" },
+          { "class": "com.rtosta.zapzap" },
+          { "initialTitle": "ZapZap" },
+          { "title": "ZapZap" }
+        ],
+        "command": ["zapzap"],
+        "move": true
+      },
+      "telegram": {
+        "enable": true,
+        "match": [
+          { "class": "org.telegram.desktop" },
+          { "class": "telegramdesktop" },
+          { "class": "telegram-desktop" },
+          { "initialTitle": "Telegram" },
+          { "title": "Telegram" }
+        ],
+        "command": ["telegram-desktop"],
+        "move": true
+      }
+    }
+  }
+}

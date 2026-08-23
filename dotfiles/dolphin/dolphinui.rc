@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<gui name="dolphin" version="43">
+ <ToolBar noMerge="1" name="mainToolBar">
+  <text translationDomain="dolphin">Main Toolbar</text>
+  <Action name="go_back"/>
+  <Action name="go_forward"/>
+  <Action name="url_navigators"/>
+  <Action name="toggle_search"/>
+  <Action name="icons"/>
+  <Action name="details"/>
+  <Action name="create_dir"/>
+  <Action name="hamburger_menu"/>
+ </ToolBar>
+</gui>

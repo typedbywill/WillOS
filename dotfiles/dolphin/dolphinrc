@@ -1,0 +1,44 @@
+[CompactMode]
+IconSize=22
+PreviewSize=22
+
+[DetailsMode]
+ExpandableFolders=true
+IconSize=22
+PreviewSize=22
+
+[General]
+BrowseThroughArchives=true
+Confirm=
+EditableUrl=false
+GlobalViewProps=true
+OpenSingleClick=false
+RememberOpenedTabs=false
+ShowFullPath=false
+ShowFullPathInTitlebar=false
+ShowSelectionToggle=false
+ShowToolTips=true
+Version=202
+ViewPropsTimestamp=2026,8,23,17,0,0.0
+
+[IconsMode]
+IconSize=48
+MaximumTextLines=2
+PreviewSize=96
+
+[KFileDialog Settings]
+Places Icons Auto-resize=false
+Places Icons Static Size=22
+
+[MainWindow]
+MenuBar=Disabled
+ToolBarsMovable=Disabled
+
+[PlacesPanel]
+IconSize=22
+
+[PreviewSettings]
+Plugins=audiothumbnail,comicbookthumbnail,djvuthumbnail,dveditorthumbnail,exrthumbnail,directorythumbnail,fontthumbnail,imagethumbnail,jpegthumbnail,kraimagethumbnail,svgthumbnail,textthumbnail,windowsexethumbnail,windowsimagethumbnail,opendocumentthumbnail,gsthumbnail,rawthumbnail,ebookthumbnail,appimage,blenderthumbnail,gamedatathumbnail,mobithumbnail,ffmpegthumbs
+
+[UiSettings]
+ColorScheme=Caelestia
