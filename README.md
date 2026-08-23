@@ -32,35 +32,19 @@ Configuração declarativa e reproduzível do NixOS com Flakes e Home Manager.
 
 ## 🚀 Como Aplicar Alterações
 
-Após editar qualquer arquivo nesta pasta, lembre-se de que o Git precisa reconhecer novos arquivos (`git add .`) para o Nix enxergá-los.
-
-Para reconstruir e ativar:
+Após editar qualquer arquivo de configuração ou dotfile, basta rodar no terminal:
 ```bash
 rebuild
 ```
-*(Ou execute diretamente: `sudo nixos-rebuild switch --flake /home/william/nixos-hyprland-caelestia#nixos`)*
+
+*(Ou o comando completo: `sudo nixos-rebuild switch --flake /home/william/nixos-hyprland-caelestia#nixos`)*
 
 ## 🐙 Como Subir para o GitHub
 
-1. Crie um repositório no seu GitHub (ex: `nixos-dotfiles`).
+1. Crie um repositório no seu GitHub (ex: `nixos-config`).
 2. Adicione o repositório remoto e envie:
    ```bash
-   git remote add origin git@github.com:seu-usuario/nixos-dotfiles.git
+   git remote add origin git@github.com:seu-usuario/nixos-config.git
    git branch -M main
    git push -u origin main
-   ```
-
-## 🔄 Reinstalando em outra máquina do zero
-
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/seu-usuario/nixos-dotfiles.git /home/william/nixos-hyprland-caelestia
-   ```
-2. Gere o hardware da máquina destino se for diferente:
-   ```bash
-   nixos-generate-config --show-hardware-config > /home/william/nixos-hyprland-caelestia/hardware-configuration.nix
-   ```
-3. Aplique a configuração:
-   ```bash
-   sudo nixos-rebuild switch --flake /home/william/nixos-hyprland-caelestia#nixos
    ```
