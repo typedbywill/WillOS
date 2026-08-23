@@ -11,7 +11,16 @@
   # Pacotes específicos do usuário
   home.packages = with pkgs; [
     firefox
+    keepassxc
+    vscode
+    code-cursor
+    syncthing
   ];
+
+  # Serviço do Syncthing em segundo plano para o usuário
+  services.syncthing = {
+    enable = true;
+  };
 
   # Gerenciamento de dotfiles declarativos
   xdg.configFile."hypr/hyprland.conf".source = ./dotfiles/hypr/hyprland.conf;
