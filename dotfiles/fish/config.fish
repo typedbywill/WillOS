@@ -18,6 +18,7 @@ alias ll="ls -lah --color=auto"
 alias la="ls -A --color=auto"
 alias l="ls -CF --color=auto"
 alias grep="grep --color=auto"
-alias rebuild="sudo nixos-rebuild switch --flake /home/william/nixos-hyprland-caelestia#nixos"
-alias ativar="/home/william/nixos-hyprland-caelestia/ativar.sh"
 alias scheme="caelestia scheme"
+
+# Alias para reconstruir o sistema direto do seu repositório
+alias rebuild="git -C /home/william/nixos-hyprland-caelestia add -A && sudo nixos-rebuild switch --flake /home/william/nixos-hyprland-caelestia#nixos"
