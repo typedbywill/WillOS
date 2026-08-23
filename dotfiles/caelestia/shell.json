@@ -1,0 +1,27 @@
+{
+  "appearance": {
+    "font": {
+      "scale": 1.0,
+      "clock": "SF Pro Display",
+      "workspaces": "SF Pro Display",
+      "headline": {
+        "family": "SF Pro Display"
+      },
+      "title": {
+        "family": "SF Pro Display"
+      },
+      "body": {
+        "family": "SF Pro Display"
+      },
+      "label": {
+        "family": "SF Pro Display"
+      },
+      "mono": {
+        "family": "CaskaydiaCove Nerd Font"
+      },
+      "icon": {
+        "family": "Material Symbols Rounded"
+      }
+    }
+  }
+}
