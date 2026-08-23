@@ -5,9 +5,6 @@
   home.homeDirectory = "/home/william";
   home.stateVersion = "26.05";
 
-  # Permite pacotes proprietários (unfree) no Home Manager
-  nixpkgs.config.allowUnfree = true;
-
   # Pacotes específicos do usuário
   home.packages = with pkgs; [
     firefox
@@ -47,6 +44,7 @@
   };
 
   home.pointerCursor = {
+    enable = true;
     gtk.enable = true;
     x11.enable = true;
     name = "Bibata-Modern-Classic";
