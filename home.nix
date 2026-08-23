@@ -15,6 +15,7 @@
     vscode
     code-cursor
     syncthing
+    lmstudio
   ];
 
   # Serviço do Syncthing em segundo plano para o usuário
