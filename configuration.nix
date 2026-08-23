@@ -75,6 +75,7 @@
 
   environment.systemPackages = with pkgs; [
     git
+    gh
     wget
     curl
     kitty
