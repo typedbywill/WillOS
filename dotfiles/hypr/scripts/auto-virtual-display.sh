@@ -25,29 +25,58 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [auto-virtual-display] $*"
 }
 
+# Aguarda o Hyprland IPC estar pronto
+wait_for_hyprland() {
+    local max_attempts=50
+    local attempt=0
+    while ! hyprctl version >/dev/null 2>&1; do
+        sleep 0.1
+        attempt=$((attempt + 1))
+        if [ "$attempt" -ge "$max_attempts" ]; then
+            log "Aviso: Timeout aguardando IPC do Hyprland."
+            break
+        fi
+    done
+}
+
+# Reinicia Sunshine caso tenha entrado em falha antes da criação do monitor
+recover_sunshine() {
+    if systemctl --user is-failed sunshine.service >/dev/null 2>&1; then
+        log "Sunshine estava em estado de falha; reiniciando serviço..."
+        systemctl --user reset-failed sunshine.service 2>/dev/null || true
+        systemctl --user restart sunshine.service 2>/dev/null || true
+    fi
+}
+
 # Sincroniza o estado dos monitores
 sync_monitors() {
+    local monitors_json
     monitors_json=$(hyprctl -j monitors 2>/dev/null)
     
     # Se hyprctl não retornar nada ou array vazio
     if [ -z "$monitors_json" ] || [ "$monitors_json" = "[]" ]; then
         log "Nenhum monitor ativo detectado no Hyprland. Criando monitor virtual 1080p..."
         hyprctl output create headless
+        recover_sunshine
         return
     fi
 
-    # Filtra nomes de monitores físicos e virtuais (HEADLESS-*)
+    # Filtra nomes de monitores físicos e virtuais (HEADLESS-* / FALLBACK-*)
+    local physical_names=""
+    local headless_names=""
     if command -v jq >/dev/null 2>&1; then
-        physical_names=$(echo "$monitors_json" | jq -r '.[] | select(.name | startswith("HEADLESS-") | not) | .name')
-        headless_names=$(echo "$monitors_json" | jq -r '.[] | select(.name | startswith("HEADLESS-")) | .name')
+        physical_names=$(echo "$monitors_json" | jq -r '.[] | select((.name | startswith("HEADLESS-") or startswith("FALLBACK-")) | not) | .name')
+        headless_names=$(echo "$monitors_json" | jq -r '.[] | select(.name | startswith("HEADLESS-") or startswith("FALLBACK-")) | .name')
     elif command -v node >/dev/null 2>&1; then
-        physical_names=$(node -e 'JSON.parse(process.argv[1]).filter(m => !m.name.startsWith("HEADLESS-")).forEach(m => console.log(m.name))' "$monitors_json")
-        headless_names=$(node -e 'JSON.parse(process.argv[1]).filter(m => m.name.startsWith("HEADLESS-")).forEach(m => console.log(m.name))' "$monitors_json")
+        physical_names=$(node -e 'JSON.parse(process.argv[1]).filter(m => !m.name.startsWith("HEADLESS-") && !m.name.startsWith("FALLBACK-")).forEach(m => console.log(m.name))' "$monitors_json")
+        headless_names=$(node -e 'JSON.parse(process.argv[1]).filter(m => m.name.startsWith("HEADLESS-") || m.name.startsWith("FALLBACK-")).forEach(m => console.log(m.name))' "$monitors_json")
     else
-        physical_names=$(echo "$monitors_json" | grep -o '"name": *"[^"]*"' | sed -E 's/.*"name": *"([^"]+)".*/\1/' | grep -v '^HEADLESS-' || true)
-        headless_names=$(echo "$monitors_json" | grep -o '"name": *"HEADLESS-[^"]*"' | sed -E 's/.*"name": *"([^"]+)".*/\1/' || true)
+        physical_names=$(echo "$monitors_json" | grep -o '"name": *"[^"]*"' | sed -E 's/.*"name": *"([^"]+)".*/\1/' | grep -v -E '^(HEADLESS-|FALLBACK-)' || true)
+        headless_names=$(echo "$monitors_json" | grep -o '"name": *"(HEADLESS-|FALLBACK-)[^"]*"' | sed -E 's/.*"name": *"([^"]+)".*/\1/' || true)
     fi
 
+    local physical_count
+    local headless_count
     physical_count=$(echo "$physical_names" | grep -c -v '^$' || true)
     headless_count=$(echo "$headless_names" | grep -c -v '^$' || true)
 
@@ -56,6 +85,7 @@ sync_monitors() {
         if [ "$headless_count" -eq 0 ]; then
             log "Monitor físico desconectado. Criando monitor virtual HEADLESS (1920x1080)..."
             hyprctl output create headless
+            recover_sunshine
         fi
     else
         # Há monitor físico: se houver algum headless ativo, remove-os
@@ -81,6 +111,9 @@ trigger_sync() {
         done
     ) 200>"$LOCK_FILE" &
 }
+
+# Aguarda inicialização do Hyprland
+wait_for_hyprland
 
 # Verificação inicial na inicialização
 sync_monitors

@@ -183,15 +183,22 @@
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
   };
 
-  services.displayManager.sddm = {
-    enable = true;
-    wayland.enable = true;
-    theme = "sddm-astronaut-theme";
-    extraPackages = with pkgs.kdePackages; [
-      qtsvg
-      qtmultimedia
-      qtvirtualkeyboard
-    ];
+  services.displayManager = {
+    sddm = {
+      enable = true;
+      wayland.enable = true;
+      theme = "sddm-astronaut-theme";
+      extraPackages = with pkgs.kdePackages; [
+        qtsvg
+        qtmultimedia
+        qtvirtualkeyboard
+      ];
+    };
+    autoLogin = {
+      enable = true;
+      user = "william";
+    };
+    defaultSession = "hyprland-uwsm";
   };
 
   environment.systemPackages = with pkgs; [
