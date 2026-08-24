@@ -19,7 +19,13 @@ alias la="ls -A --color=auto"
 alias l="ls -CF --color=auto"
 alias grep="grep --color=auto"
 alias scheme="caelestia scheme"
-alias reboot-windows='if type -q efibootmgr; sudo efibootmgr -n 0000 && sudo reboot; else; sudo nix-shell -p efibootmgr --run "efibootmgr -n 0000" && sudo reboot; end'
+function reboot-windows
+    if type -q efibootmgr
+        sudo efibootmgr -n 0000 && sudo reboot
+    else
+        sudo nix-shell -p efibootmgr --run "efibootmgr -n 0000" && sudo reboot
+    end
+end
 
 # Função para reconstruir o sistema e sincronizar com o Git automaticamente
 function rebuild
