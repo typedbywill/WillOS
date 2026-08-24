@@ -23,5 +23,11 @@
         "family": "Material Symbols Rounded"
       }
     }
+  },
+  "general": {
+    "idle": {
+      "lockBeforeSleep": false,
+      "timeouts": []
+    }
   }
 }

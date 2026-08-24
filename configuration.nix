@@ -8,9 +8,15 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 3;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.supportedFilesystems = [ "ntfs" ];
 
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
+  networking.firewall = {
+    enable = true;
+    allowedTCPPorts = [ 21118 ];
+    allowedUDPPorts = [ 21118 ];
+  };
   time.timeZone = "America/Sao_Paulo";
 
   # Habilita execução de binários não-nix pré-compilados
@@ -131,12 +137,46 @@
   # Suporte a GPU NVIDIA em containers Docker (CDI)
   hardware.nvidia-container-toolkit.enable = true;
 
+  # Desativação completa de suspensão, hibernação e sleep no nível do sistema
+  systemd.targets.sleep.enable = false;
+  systemd.targets.suspend.enable = false;
+  systemd.targets.hibernate.enable = false;
+  systemd.targets.hybrid-sleep.enable = false;
+
+  # Desativa ações automáticas de economia de energia e suspensão do systemd-logind
+  services.logind.settings.Login = {
+    HandleSuspendKey = "ignore";
+    HandleHibernateKey = "ignore";
+    HandleLidSwitch = "ignore";
+    HandleLidSwitchExternalPower = "ignore";
+    HandleLidSwitchDocked = "ignore";
+    IdleAction = "ignore";
+  };
+
   # Habilita suporte a Bluetooth
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
   };
   services.blueman.enable = true;
+
+  # Servidor OpenSSH (sshd)
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = true;
+      PermitRootLogin = "no";
+    };
+    openFirewall = true;
+  };
+
+  # Servidor de streaming e acesso remoto Sunshine
+  services.sunshine = {
+    enable = true;
+    autoStart = true;
+    capSysAdmin = true;
+    openFirewall = true;
+  };
 
   xdg.portal = {
     enable = true;
@@ -176,9 +216,24 @@
     nerd-fonts.caskaydia-cove
     bibata-cursors
     sddm-astronaut
+    cloudflared
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
+
+  # Serviço do Cloudflare Tunnel
+  systemd.services.cloudflared = {
+    description = "Cloudflare Tunnel Daemon";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run --token REDACTED_CLOUDFLARE_TOKEN";
+      Restart = "always";
+      RestartSec = "10s";
+      DynamicUser = true;
+    };
+  };
 
   fonts = {
     packages = with pkgs; [

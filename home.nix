@@ -31,6 +31,14 @@
     kdePackages.ark
     libnotify
     nmap
+    nodejs
+    pnpm
+    yarn
+    bun
+    moonlight-qt
+    rustdesk-flutter
+    socat
+    jq
   ];
 
   # Variáveis de sessão do usuário
@@ -69,6 +77,7 @@
 
   # Gerenciamento de dotfiles declarativos
   xdg.configFile."hypr/hyprland.conf" = { source = ./dotfiles/hypr/hyprland.conf; force = true; };
+  xdg.configFile."hypr/scripts/auto-virtual-display.sh" = { source = ./dotfiles/hypr/scripts/auto-virtual-display.sh; force = true; executable = true; };
   xdg.configFile."kitty/kitty.conf" = { source = ./dotfiles/kitty/kitty.conf; force = true; };
   xdg.configFile."caelestia/shell.json" = { source = ./dotfiles/caelestia/shell.json; force = true; };
   xdg.configFile."caelestia/cli.json" = { source = ./dotfiles/caelestia/cli.json; force = true; };
