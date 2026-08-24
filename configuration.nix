@@ -55,7 +55,7 @@
   users.users.william = {
     isNormalUser = true;
     description = "William";
-    extraGroups = [ "networkmanager" "wheel" "i2c" "docker" ];
+    extraGroups = [ "networkmanager" "wheel" "i2c" "docker" "uinput" "input" ];
     shell = pkgs.fish;
   };
 
@@ -206,6 +206,7 @@
     gh
     wget
     curl
+    efibootmgr
     docker-compose
     kitty
     fish

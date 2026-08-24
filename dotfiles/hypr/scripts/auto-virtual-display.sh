@@ -39,13 +39,11 @@ wait_for_hyprland() {
     done
 }
 
-# Reinicia Sunshine caso tenha entrado em falha antes da criação do monitor
-recover_sunshine() {
-    if systemctl --user is-failed sunshine.service >/dev/null 2>&1; then
-        log "Sunshine estava em estado de falha; reiniciando serviço..."
-        systemctl --user reset-failed sunshine.service 2>/dev/null || true
-        systemctl --user restart sunshine.service 2>/dev/null || true
-    fi
+# Reinicia Sunshine para atualizar a captura e lista de monitores
+restart_sunshine() {
+    log "Reiniciando serviço Sunshine para atualizar lista de monitores..."
+    systemctl --user reset-failed sunshine.service 2>/dev/null || true
+    systemctl --user restart sunshine.service 2>/dev/null || true
 }
 
 # Sincroniza o estado dos monitores
@@ -57,7 +55,8 @@ sync_monitors() {
     if [ -z "$monitors_json" ] || [ "$monitors_json" = "[]" ]; then
         log "Nenhum monitor ativo detectado no Hyprland. Criando monitor virtual 1080p..."
         hyprctl output create headless
-        recover_sunshine
+        sleep 0.5
+        restart_sunshine
         return
     fi
 
@@ -85,7 +84,8 @@ sync_monitors() {
         if [ "$headless_count" -eq 0 ]; then
             log "Monitor físico desconectado. Criando monitor virtual HEADLESS (1920x1080)..."
             hyprctl output create headless
-            recover_sunshine
+            sleep 0.5
+            restart_sunshine
         fi
     else
         # Há monitor físico: se houver algum headless ativo, remove-os
@@ -95,6 +95,8 @@ sync_monitors() {
                 log "Monitor físico conectado ($physical_names). Removendo monitor virtual $hmon..."
                 hyprctl output remove "$hmon"
             done
+            sleep 0.5
+            restart_sunshine
         fi
     fi
 }
@@ -117,6 +119,9 @@ wait_for_hyprland
 
 # Verificação inicial na inicialização
 sync_monitors
+
+# Garante que o Sunshine tenha o monitor correto e inicializado após o boot
+restart_sunshine
 
 # Loop contínuo escutando o socket de eventos do Hyprland
 while true; do
