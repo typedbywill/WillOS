@@ -7,6 +7,7 @@
 
   # Pacotes específicos do usuário
   home.packages = with pkgs; [
+    mission-center
     firefox
     keepassxc
     vscode
