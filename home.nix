@@ -18,6 +18,7 @@
     telegram-desktop
     papirus-icon-theme
     papirus-folders
+    kora-icon-theme
     kdePackages.dolphin
     kdePackages.breeze
     kdePackages.breeze-icons
@@ -103,8 +104,8 @@
       size = 11;
     };
     iconTheme = {
-      name = "Papirus-Dark";
-      package = pkgs.papirus-icon-theme;
+      name = "kora-grey";
+      package = pkgs.kora-icon-theme;
     };
     cursorTheme = {
       name = "Bibata-Modern-Classic";

@@ -18,9 +18,9 @@ fi
 # Determina se está no modo claro ou escuro
 MODE="${SCHEME_MODE:-dark}"
 if [ "$MODE" = "light" ]; then
-    ICON_THEME="Papirus-Light"
+    ICON_THEME="kora-grey"
 else
-    ICON_THEME="Papirus-Dark"
+    ICON_THEME="kora-grey"
 fi
 
 # 2. Gera o kdeglobals harmonizado com as fontes, ícones e cores do Caelestia
@@ -41,11 +41,11 @@ contrast=4
 widgetStyle=Breeze
 
 [Icons]
-Theme=Papirus-Dark
+Theme=kora-grey
 KDE_HEADER
 
 # Ajusta tema de ícones de acordo com o modo
-sed -i "s/Theme=Papirus-Dark/Theme=$ICON_THEME/" "$KDEGLOBALS"
+sed -i "s/^Theme=.*/Theme=$ICON_THEME/" "$KDEGLOBALS"
 
 # Anexa a tabela completa de cores dinâmicas gerada pelo Caelestia
 if [ -f "$QTENGINE_COLORS" ]; then
