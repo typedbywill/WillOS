@@ -1,8 +1,8 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, lib, inputs, ... }:
 
 {
   imports = [
-    ./hardware-configuration.nix
+    ./modules/gpu.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -10,7 +10,7 @@
   boot.loader.efi.canTouchEfiVariables = true;
   boot.supportedFilesystems = [ "ntfs" ];
 
-  networking.hostName = "nixos";
+  networking.hostName = lib.mkDefault "nixos";
   networking.networkmanager.enable = true;
   networking.firewall = {
     enable = true;
@@ -97,32 +97,6 @@
     alsa.enable = true;
     alsa.support32Bit = true;
   };
-  # Aceleração gráfica e drivers NVIDIA
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-  };
-
-  services.xserver.videoDrivers = [ "nvidia" ];
-
-  hardware.nvidia = {
-    # Modesetting é obrigatório para Wayland / Hyprland
-    modesetting.enable = true;
-
-    # Gerenciamento de energia
-    powerManagement.enable = false;
-    powerManagement.finegrained = false;
-
-    # Driver proprietário oficial
-    open = false;
-
-    # Utilitário nvidia-settings
-    nvidiaSettings = true;
-
-    # Pacote estável do driver NVIDIA
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
-  };
-
   hardware.i2c.enable = true;
 
   # Virtualização e Docker
@@ -133,9 +107,6 @@
       dates = "weekly";
     };
   };
-
-  # Suporte a GPU NVIDIA em containers Docker (CDI)
-  hardware.nvidia-container-toolkit.enable = true;
 
   # Desativação completa de suspensão, hibernação e sleep no nível do sistema
   systemd.targets.sleep.enable = false;
@@ -229,12 +200,18 @@
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
-  # Serviço do Cloudflare Tunnel (Token carregado com segurança de arquivo local fora do Git)
+  # Serviço do Cloudflare Tunnel (Inicia automaticamente apenas se o arquivo de token existir)
   systemd.services.cloudflared = {
     description = "Cloudflare Tunnel Daemon";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
+    unitConfig = {
+      ConditionPathExists = [
+        "|/etc/cloudflared.env"
+        "|/home/william/.config/cloudflared/tunnel.env"
+      ];
+    };
     serviceConfig = {
       EnvironmentFile = [
         "-/etc/cloudflared.env"
@@ -270,9 +247,6 @@
     HYPRCURSOR_THEME = "Bibata-Modern-Classic";
     HYPRCURSOR_SIZE = "24";
     TERMINAL = "kitty";
-    LIBVA_DRIVER_NAME = "nvidia";
-    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
-    NVD_BACKEND = "direct";
   };
 
   system.stateVersion = "26.05";

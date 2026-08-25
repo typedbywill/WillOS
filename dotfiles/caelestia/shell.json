@@ -24,6 +24,12 @@
       }
     }
   },
+  "bar": {
+    "workspaces": {
+      "perMonitorWorkspaces": true,
+      "shown": 5
+    }
+  },
   "general": {
     "idle": {
       "lockBeforeSleep": false,

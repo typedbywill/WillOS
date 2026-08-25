@@ -51,6 +51,9 @@ end
 function rebuild
     set -l repo "/home/william/nixos-hyprland-caelestia"
     set -l branch (git -C $repo branch --show-current)
+    if test -z "$branch"
+        set branch "main"
+    end
     set -l rebuild_args
     set -l commit_msg ""
 
@@ -66,11 +69,16 @@ function rebuild
         set commit_msg "rebuild: "(date "+%Y-%m-%d %H:%M:%S")
     end
 
+    echo "📥 Verificando e baixando atualizações do Git (origin/$branch)..."
+    if not git -C $repo pull --rebase --autostash origin $branch
+        echo "⚠️  Falha ou aviso ao sincronizar com o Git remoto. Prosseguindo com o build local..."
+    end
+
     echo "📦 Preparando arquivos para o Nix Flake..."
     git -C $repo add -A
 
     echo "❄️  Reconstruindo o NixOS..."
-    if sudo nixos-rebuild switch --flake "$repo#nixos" $rebuild_args
+    if sudo nixos-rebuild switch --flake "$repo" $rebuild_args
         # Se houver alterações locais não commitadas, cria o commit
         if not git -C $repo diff --staged --quiet
             git -C $repo commit -m "$commit_msg"

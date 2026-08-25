@@ -4,3 +4,4 @@ result-*
 *.bak
 *~
 .direnv/
+dotfiles/hypr/scheme/current.conf

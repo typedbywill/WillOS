@@ -23,11 +23,13 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs: {
-    nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+  let
+    mkSystem = hostModule: nixpkgs.lib.nixosSystem {
       specialArgs = { inherit inputs; };
       modules = [
         ./configuration.nix
+        hostModule
         home-manager.nixosModules.home-manager
         {
           home-manager.useGlobalPkgs = true;
@@ -37,6 +39,12 @@
           home-manager.users.william = import ./home.nix;
         }
       ];
+    };
+  in {
+    nixosConfigurations = {
+      casa = mkSystem ./hosts/casa;
+      laptop = mkSystem ./hosts/laptop;
+      nixos = mkSystem ./hardware-configuration.nix;
     };
   };
 }

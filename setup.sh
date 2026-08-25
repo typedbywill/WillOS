@@ -29,6 +29,21 @@ else
     echo "ℹ️  Mantendo hardware-configuration.nix já presente."
 fi
 
+# Detecta GPU e define o perfil se ainda não estiver configurado
+if ! grep -q "myHardware.gpu.type" "$TARGET_DIR/hardware-configuration.nix"; then
+    echo "🔎 Detectando GPU para definir perfil de hardware..."
+    if lspci 2>/dev/null | grep -iq "nvidia"; then
+        echo "🎮 GPU NVIDIA detectada. Ativando perfil Nvidia..."
+        sed -i 's/}$/  myHardware.gpu.type = lib.mkDefault "nvidia";\n}/' "$TARGET_DIR/hardware-configuration.nix"
+    elif lspci 2>/dev/null | grep -iq "amd"; then
+        echo "🎮 GPU AMD detectada. Ativando perfil AMD..."
+        sed -i 's/}$/  myHardware.gpu.type = lib.mkDefault "amd";\n}/' "$TARGET_DIR/hardware-configuration.nix"
+    else
+        echo "💻 GPU Intel/Genérica detectada. Ativando perfil Intel..."
+        sed -i 's/}$/  myHardware.gpu.type = lib.mkDefault "intel";\n}/' "$TARGET_DIR/hardware-configuration.nix"
+    fi
+fi
+
 # 3. Adicionar arquivos ao Git (necessário para o Nix Flakes enxergar)
 git -C "$TARGET_DIR" add -A
 

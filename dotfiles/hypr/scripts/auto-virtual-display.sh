@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# Auto Virtual Display Manager for Hyprland
+# Auto Virtual Display & Window Rescue Manager for Hyprland
 # 
-# Cria automaticamente um monitor virtual headless (1920x1080) quando nenhum
-# monitor físico estiver conectado, e remove o monitor virtual automaticamente
-# quando o monitor físico for reconectado.
+# 1. Cria automaticamente um monitor virtual headless (1920x1080) quando nenhum
+#    monitor físico estiver conectado, e remove o monitor virtual automaticamente
+#    quando o monitor físico for reconectado.
+# 2. Resgata e redireciona automaticamente aplicativos e workspaces para um
+#    monitor conectado quando qualquer monitor for desconectado.
 # ==============================================================================
 
 export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin"
@@ -44,6 +46,58 @@ restart_sunshine() {
     log "Reiniciando serviço Sunshine para atualizar lista de monitores..."
     systemctl --user reset-failed sunshine.service 2>/dev/null || true
     systemctl --user restart sunshine.service 2>/dev/null || true
+}
+
+# Resgata janelas e workspaces órfãos quando um monitor é desconectado
+rescue_orphaned_windows() {
+    local monitors_json
+    monitors_json=$(hyprctl -j monitors 2>/dev/null)
+    [ -z "$monitors_json" ] || [ "$monitors_json" = "[]" ] && return
+
+    local clients_json
+    clients_json=$(hyprctl -j clients 2>/dev/null)
+    [ -z "$clients_json" ] || [ "$clients_json" = "[]" ] && return
+
+    local workspaces_json
+    workspaces_json=$(hyprctl -j workspaces 2>/dev/null)
+
+    # Obter monitor alvo (focado ou primeiro conectado) e seu workspace ativo
+    local target_mon target_ws
+    target_mon=$(echo "$monitors_json" | jq -r '(.[] | select(.focused == true) | .name) // .[0].name')
+    target_ws=$(echo "$monitors_json" | jq -r '(.[] | select(.focused == true) | .activeWorkspace.id) // .[0].activeWorkspace.id')
+
+    if [ -z "$target_mon" ] || [ "$target_mon" = "null" ]; then
+        return
+    fi
+
+    local active_mon_ids active_mon_names
+    active_mon_ids=$(echo "$monitors_json" | jq '[.[].id]')
+    active_mon_names=$(echo "$monitors_json" | jq '[.[].name]')
+
+    # 1. Resgata janelas de workspaces regulares vinculadas a monitores desconectados
+    local orphaned_addresses
+    orphaned_addresses=$(echo "$clients_json" | jq -r --argjson active_ids "$active_mon_ids" '
+        .[] | select(.workspace.id > 0 and (.monitor as $m | ($active_ids | index($m)) == null)) | .address
+    ')
+
+    for addr in $orphaned_addresses; do
+        [ -z "$addr" ] && continue
+        log "Movendo janela órfã $addr para o workspace ativo $target_ws ($target_mon)..."
+        hyprctl dispatch movetoworkspacesilent "$target_ws,address:$addr" >/dev/null 2>&1
+    done
+
+    # 2. Resgata workspaces com janelas cujo monitor não existe mais
+    if [ -n "$workspaces_json" ] && [ "$workspaces_json" != "[]" ]; then
+        local orphaned_ws_ids
+        orphaned_ws_ids=$(echo "$workspaces_json" | jq -r --argjson active_names "$active_mon_names" '
+            .[] | select(.id > 0 and .windows > 0 and (.monitor as $m | ($active_names | index($m)) == null)) | .id
+        ')
+        for ws_id in $orphaned_ws_ids; do
+            [ -z "$ws_id" ] && continue
+            log "Movendo workspace órfão $ws_id para o monitor ativo $target_mon..."
+            hyprctl dispatch moveworkspacetomonitor "$ws_id" "$target_mon" >/dev/null 2>&1
+        done
+    fi
 }
 
 # Sincroniza o estado dos monitores
@@ -85,20 +139,34 @@ sync_monitors() {
             log "Monitor físico desconectado. Criando monitor virtual HEADLESS (1920x1080)..."
             hyprctl output create headless
             sleep 0.5
+            rescue_orphaned_windows
             restart_sunshine
         fi
     else
-        # Há monitor físico: se houver algum headless ativo, remove-os
+        # Há monitor físico: se houver algum headless ativo, move as janelas para o físico e remove-os
         if [ "$headless_count" -gt 0 ]; then
             for hmon in $headless_names; do
                 [ -z "$hmon" ] && continue
+                local target_phys
+                target_phys=$(echo "$physical_names" | head -n 1)
+                log "Movendo workspaces do monitor virtual $hmon para $target_phys..."
+                local hmon_workspaces
+                hmon_workspaces=$(hyprctl -j workspaces 2>/dev/null | jq -r --arg hm "$hmon" '.[] | select(.monitor == $hm and .windows > 0) | .id')
+                for hw in $hmon_workspaces; do
+                    [ -z "$hw" ] && continue
+                    hyprctl dispatch moveworkspacetomonitor "$hw" "$target_phys" >/dev/null 2>&1
+                done
                 log "Monitor físico conectado ($physical_names). Removendo monitor virtual $hmon..."
                 hyprctl output remove "$hmon"
             done
             sleep 0.5
+            rescue_orphaned_windows
             restart_sunshine
         fi
     fi
+
+    # Sempre garante que janelas órfãs sejam resgatadas para os monitores remanescentes
+    rescue_orphaned_windows
 }
 
 # Agrupa eventos rápidos (debouncing)

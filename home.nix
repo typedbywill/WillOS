@@ -80,6 +80,7 @@
   # Gerenciamento de dotfiles declarativos
   xdg.configFile."hypr/hyprland.conf" = { source = ./dotfiles/hypr/hyprland.conf; force = true; };
   xdg.configFile."hypr/scripts/auto-virtual-display.sh" = { source = ./dotfiles/hypr/scripts/auto-virtual-display.sh; force = true; executable = true; };
+  xdg.configFile."hypr/scripts/workspace.sh" = { source = ./dotfiles/hypr/scripts/workspace.sh; force = true; executable = true; };
   xdg.configFile."kitty/kitty.conf" = { source = ./dotfiles/kitty/kitty.conf; force = true; };
   xdg.configFile."caelestia/shell.json" = { source = ./dotfiles/caelestia/shell.json; force = true; };
   xdg.configFile."caelestia/cli.json" = { source = ./dotfiles/caelestia/cli.json; force = true; };
@@ -92,9 +93,22 @@
   xdg.configFile."dolphinrc" = { source = ./dotfiles/dolphin/dolphinrc; force = true; };
   xdg.dataFile."kxmlgui5/dolphin/dolphinui.rc" = { source = ./dotfiles/dolphin/dolphinui.rc; force = true; };
 
+  # Sincronização de wallpapers padrão públicos
+  home.file."Pictures/Wallpapers/default.jpg".source = ./wallpapers/default.jpg;
+
   # Sincronização automática do tema Caelestia para o KDE/Dolphin na ativação
   home.activation.syncKde = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     $DRY_RUN_CMD bash ${config.home.homeDirectory}/.config/caelestia/sync-kde.sh || true
+  '';
+
+  # Garante a existência do arquivo de esquema de cores para o Hyprland não falhar no boot
+  home.activation.ensureHyprScheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    SCHEME_DIR="${config.home.homeDirectory}/.config/hypr/scheme"
+    SCHEME_FILE="$SCHEME_DIR/current.conf"
+    mkdir -p "$SCHEME_DIR"
+    if [ ! -f "$SCHEME_FILE" ]; then
+      cp -f ${./dotfiles/hypr/scheme/default.conf} "$SCHEME_FILE" || true
+    fi
   '';
 
   # Configuração de temas GTK e Cursor
