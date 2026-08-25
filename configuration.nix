@@ -229,17 +229,20 @@
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
-  # Serviço do Cloudflare Tunnel
+  # Serviço do Cloudflare Tunnel (Token carregado com segurança de arquivo local fora do Git)
   systemd.services.cloudflared = {
     description = "Cloudflare Tunnel Daemon";
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
-      ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run --token REDACTED_CLOUDFLARE_TOKEN";
+      EnvironmentFile = [
+        "-/etc/cloudflared.env"
+        "-/home/william/.config/cloudflared/tunnel.env"
+      ];
+      ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run";
       Restart = "always";
       RestartSec = "10s";
-      DynamicUser = true;
     };
   };
 
