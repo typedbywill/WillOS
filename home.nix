@@ -1,5 +1,8 @@
 { config, pkgs, lib, inputs, ... }:
 
+let
+  chatgpt = pkgs.callPackage ./pkgs/chatgpt.nix {};
+in
 {
   home.username = "william";
   home.homeDirectory = "/home/william";
@@ -7,6 +10,7 @@
 
   # Pacotes específicos do usuário
   home.packages = with pkgs; [
+    chatgpt
     mission-center
     firefox
     keepassxc
