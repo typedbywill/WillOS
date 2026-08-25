@@ -6,6 +6,27 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada para ser **comp
 
 ---
 
+## ⚡ Princípio Fundamental: Separação entre Configuração vs. Hardware
+
+> [!IMPORTANT]
+> **A sincronização é apenas para Configurações e Dotfiles. Hardware, Infraestrutura e Partições NUNCA devem ser acoplados rigidamente entre máquinas.**
+
+- **O que É sincronizado (Configurações Universais)**:
+  - Ambiente gráfico (Hyprland, Caelestia Shell, Waybar, temas visuais, esquemas de cores e fontes).
+  - Shell Fish, aliases, atalhos de teclado e utilitários do terminal.
+  - Programas, associações de arquivos e preferências do usuário (Home Manager).
+  - Scripts de comportamento do desktop (workspaces multi-telas, display virtual, Sunshine).
+
+- **O que NÃO deve ser sincronizado de forma estática (Hardware & Infraestrutura)**:
+  - **Discos, UUIDs e Criptografia (LUKS)**: Cada máquina física possui sua própria tabela de partições e identificadores únicos.
+  - **Processador e Módulos de Kernel**: Microcódigo Intel vs. AMD e módulos de virtualização (`kvm-intel` vs. `kvm-amd`).
+  - **Drivers de GPU**: Gerenciados dinamicamente via módulo modular [`modules/gpu.nix`](./modules/gpu.nix) (`intel`, `nvidia`, `hybrid-intel-nvidia` ou `amd`).
+
+📌 **Como o sistema resolve isso?**
+O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hosts/casa`, `hosts/laptop`, etc.) e preserva o `hardware-configuration.nix` gerado localmente em novas instalações através do `setup.sh`.
+
+---
+
 ## 🏗️ Arquitetura em Duas Camadas
 
 1. **Camada 1 (Este Repositório - Público)**: Instalação do sistema operacional, drivers, Wayland/Hyprland, Caelestia, navegadores, terminal, fontes e tema visual padrão.
@@ -18,18 +39,23 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada para ser **comp
 ```text
 .
 ├── setup.sh                   # Script de instalação/restauração zero-auth em qualquer máquina
-├── flake.nix                  # Flake principal do sistema (inputs, módulos e outputs)
+├── flake.nix                  # Flake principal do sistema com suporte multi-host
 ├── flake.lock                 # Travamento de versões dos pacotes e flakes
-├── configuration.nix          # Configuração do sistema (serviços, drivers NVIDIA, áudio, boot)
-├── hardware-configuration.nix # Mapeamento de hardware e discos da máquina local
+├── configuration.nix          # Configuração compartilhada do sistema (serviços, áudio, boot, etc.)
+├── hardware-configuration.nix # Mapeamento de hardware genérico/fallback
 ├── home.nix                   # Home Manager (pacotes de usuário, temas GTK/Qt, dotfiles)
+├── hosts/                     # Configurações isoladas de hardware por máquina
+│   ├── casa/                  # Desktop AMD + GPU NVIDIA
+│   └── laptop/                # Notebook Intel + GPU Intel + LUKS
+├── modules/                   # Módulos opcionais do sistema
+│   └── gpu.nix                # Gerenciador dinâmico de drivers gráficos (Intel / AMD / Nvidia)
 ├── wallpapers/                # Papéis de parede padrão do sistema
 │   └── default.jpg
 └── dotfiles/                  # Arquivos de configuração dos utilitários
     ├── hypr/
     │   ├── hyprland.conf      # Configuração do compositor Hyprland
-    │   ├── scheme/            # Esquema inicial de cores do tema
-    │   └── scripts/           # Scripts de display virtual automático / Sunshine
+    │   ├── scheme/            # Esquema de cores e tema
+    │   └── scripts/           # Scripts de display virtual automático e workspaces por monitor
     ├── kitty/                 # Emulador de terminal Kitty
     ├── caelestia/             # Shell Caelestia, CLI e scripts de integração com KDE
     ├── fish/                  # Shell Fish e aliases
@@ -52,7 +78,7 @@ bash <(curl -sL https://raw.githubusercontent.com/typedbywill/myNix/main/setup.s
 
 O script realizará:
 1. Clone do repositório via HTTPS público para `~/nixos-hyprland-caelestia`.
-2. Preservação/geração automática do `hardware-configuration.nix` da máquina de destino.
+2. Preservação/geração automática do `hardware-configuration.nix` da máquina de destino com auto-detecção de GPU.
 3. Execução do `nixos-rebuild switch` completo.
 
 ---
@@ -65,4 +91,4 @@ Após editar qualquer arquivo de configuração ou dotfile neste repositório:
 rebuild
 ```
 
-*(Ou o comando completo: `sudo nixos-rebuild switch --flake /home/william/nixos-hyprland-caelestia#nixos`)*
+*(Ou o comando completo: `sudo nixos-rebuild switch --flake /home/william/nixos-hyprland-caelestia`)*
