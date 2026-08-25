@@ -80,6 +80,7 @@
     withUWSM = true;
     xwayland.enable = true;
   };
+  programs.hyprlock.enable = true;
 
   programs.dconf.enable = true;
   programs.steam = {
