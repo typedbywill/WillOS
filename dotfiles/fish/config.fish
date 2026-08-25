@@ -19,6 +19,26 @@ alias la="ls -A --color=auto"
 alias l="ls -CF --color=auto"
 alias grep="grep --color=auto"
 alias scheme="caelestia scheme"
+alias restart-caelestia="restart-caelestia"
+alias caelestia-restart="restart-caelestia"
+
+function restart-caelestia --description "Reiniciar a barra e interface do Caelestia"
+    echo "🔄 Reiniciando Caelestia Shell..."
+    caelestia shell -k 2>/dev/null
+    set -l count 0
+    while pgrep -f quickshell >/dev/null
+        sleep 0.1
+        set count (math $count + 1)
+        if test $count -ge 15
+            pkill -9 -f quickshell 2>/dev/null
+            break
+        end
+    end
+    sleep 0.2
+    caelestia shell -d
+    echo "✨ Caelestia reiniciado com sucesso!"
+end
+
 function reboot-windows
     if type -q efibootmgr
         sudo efibootmgr -n 0000 && sudo reboot
