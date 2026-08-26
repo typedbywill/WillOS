@@ -43,7 +43,7 @@
   in {
     nixosConfigurations = {
       casa = mkSystem ./hosts/casa;
-      laptop = mkSystem ./hosts/laptop;
+      notegiga = mkSystem ./hosts/notegiga;
       nixos = mkSystem ./hardware-configuration.nix;
     };
   };

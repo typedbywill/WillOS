@@ -5,6 +5,6 @@
     ./hardware-configuration.nix
   ];
 
-  networking.hostName = "laptop";
+  networking.hostName = "notegiga";
   myHardware.gpu.type = lib.mkDefault "intel";
 }

@@ -23,7 +23,7 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada para ser **comp
   - **Drivers de GPU**: Gerenciados dinamicamente via módulo modular [`modules/gpu.nix`](./modules/gpu.nix) (`intel`, `nvidia`, `hybrid-intel-nvidia` ou `amd`).
 
 📌 **Como o sistema resolve isso?**
-O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hosts/casa`, `hosts/laptop`, etc.) e preserva o `hardware-configuration.nix` gerado localmente em novas instalações através do `setup.sh`.
+O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hosts/casa`, `hosts/notegiga`, etc.) e preserva o `hardware-configuration.nix` gerado localmente em novas instalações através do `setup.sh`.
 
 ---
 
@@ -46,7 +46,7 @@ O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hos
 ├── home.nix                   # Home Manager (pacotes de usuário, temas GTK/Qt, dotfiles)
 ├── hosts/                     # Configurações isoladas de hardware por máquina
 │   ├── casa/                  # Desktop AMD + GPU NVIDIA
-│   └── laptop/                # Notebook Intel + GPU Intel + LUKS
+│   └── notegiga/                # Notebook Intel + GPU Intel + LUKS
 ├── modules/                   # Módulos opcionais do sistema
 │   └── gpu.nix                # Gerenciador dinâmico de drivers gráficos (Intel / AMD / Nvidia)
 ├── wallpapers/                # Papéis de parede padrão do sistema
