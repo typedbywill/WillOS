@@ -100,6 +100,7 @@ in
   xdg.configFile."caelestia/cli.json" = { source = ./dotfiles/caelestia/cli.json; force = true; };
   xdg.configFile."caelestia/sync-kde.sh" = { source = ./dotfiles/caelestia/sync-kde.sh; force = true; executable = true; };
   xdg.configFile."fish/config.fish" = { source = ./dotfiles/fish/config.fish; force = true; };
+  xdg.configFile."scripts/rebuild.sh" = { source = ./scripts/rebuild.sh; force = true; executable = true; };
   xdg.configFile."fastfetch/config.jsonc" = { source = ./dotfiles/fastfetch/config.jsonc; force = true; };
   xdg.configFile."fuzzel/fuzzel.ini" = { source = ./dotfiles/fuzzel/fuzzel.ini; force = true; };
   xdg.configFile."cava/config" = { source = ./dotfiles/cava/config; force = true; };

@@ -47,52 +47,26 @@ function reboot-windows
     end
 end
 
-# Função para reconstruir o sistema e sincronizar com o Git automaticamente
-function rebuild
-    set -l repo "/home/william/nixos-hyprland-caelestia"
-    set -l branch (git -C $repo branch --show-current)
-    if test -z "$branch"
-        set branch "main"
-    end
-    set -l rebuild_args
-    set -l commit_msg ""
+# Função para reconstruir o sistema e sincronizar com o Git automaticamente (Modo Grande Atualização)
+function rebuild --description "Reconstruir o NixOS com visual dinâmico e estatísticas completas"
+    set -l script_repo "$HOME/nixos-hyprland-caelestia/scripts/rebuild.sh"
+    set -l script_config "$HOME/.config/scripts/rebuild.sh"
 
-    for arg in $argv
-        if string match -q -- "-*" $arg
-            set -a rebuild_args $arg
-        else
-            set commit_msg $arg
-        end
-    end
-
-    if test -z "$commit_msg"
-        set commit_msg "rebuild: "(date "+%Y-%m-%d %H:%M:%S")
-    end
-
-    echo "📥 Verificando e baixando atualizações do Git (origin/$branch)..."
-    if not git -C $repo pull --rebase --autostash origin $branch
-        echo "⚠️  Falha ou aviso ao sincronizar com o Git remoto. Prosseguindo com o build local..."
-    end
-
-    echo "📦 Preparando arquivos para o Nix Flake..."
-    git -C $repo add -A
-
-    echo "❄️  Reconstruindo o NixOS..."
-    if sudo nixos-rebuild switch --flake "$repo" $rebuild_args
-        # Se houver alterações locais não commitadas, cria o commit
-        if not git -C $repo diff --staged --quiet
-            git -C $repo commit -m "$commit_msg"
-        end
-
-        echo "🚀 Enviando alterações para origin/$branch..."
-        if git -C $repo push origin $branch
-            echo "✅ Sistema reconstruído e repositório sincronizado com sucesso!"
-        else
-            echo "⚠️  O rebuild funcionou, mas houve uma falha ao enviar para o Git (push)."
-        end
+    if test -f "$script_repo"
+        bash "$script_repo" $argv
+    else if test -f "$script_config"
+        bash "$script_config" $argv
     else
-        echo "❌ Falha no rebuild do NixOS. Nenhum commit/push foi enviado."
+        echo "❌ Script de rebuild não encontrado em $script_repo"
         return 1
     end
 end
+
+# Autocompletes interativos do comando rebuild
+complete -c rebuild -l upgrade -s u -d "Atualizar todos os inputs do Flake (nix flake update)"
+complete -c rebuild -l boot -d "Adicionar ao bootloader sem ativar imediatamente"
+complete -c rebuild -l show-trace -d "Exibir trace detalhado de erros de compilação"
+complete -c rebuild -l fast -d "Pular sincronização do Git (modo rápido)"
+complete -c rebuild -l no-pull -d "Pular git pull"
+complete -c rebuild -l help -s h -d "Exibir central de ajuda da atualização"
 
