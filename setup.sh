@@ -5,7 +5,7 @@ REPO_URL="https://github.com/typedbywill/myNix.git"
 TARGET_DIR="${TARGET_DIR:-$HOME/nixos-hyprland-caelestia}"
 
 echo "========================================="
-echo "❄️  NixOS Setup & Restore Script"
+echo "❄️  WillOS - Setup & Restore Script"
 echo "========================================="
 
 # 1. Clonar ou atualizar o repositório
@@ -52,5 +52,5 @@ echo "🚀 Aplicando configuração do NixOS..."
 sudo nixos-rebuild switch --flake "$TARGET_DIR#nixos" "$@"
 
 echo "========================================="
-echo "✨ Sistema NixOS configurado e restaurado com sucesso!"
+echo "✨ WillOS configurado e restaurado com sucesso!"
 echo "========================================="

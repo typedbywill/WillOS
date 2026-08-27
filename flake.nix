@@ -1,5 +1,5 @@
 {
-  description = "NixOS com Hyprland e Caelestia Shell";
+  description = "WillOS - NixOS com Hyprland e Caelestia Shell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

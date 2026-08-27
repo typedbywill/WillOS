@@ -1,6 +1,6 @@
-# ❄️ NixOS Hyprland & Caelestia Config (Base Pública)
+# ❄️ WillOS (Base Pública)
 
-Configuração declarativa, moderna e 100% reproduzível do NixOS com Flakes e Home Manager.
+Configuração declarativa, moderna e 100% reproduzível do **WillOS** (NixOS com Flakes, Hyprland, Caelestia Shell e Home Manager).
 
 Esta é a **Camada Base Pública** do sistema. Ela foi projetada para ser **completamente autossuficiente e genérica**, permitindo instalar um desktop visualmente completo com Hyprland, Caelestia Shell, fontes e temas em qualquer máquina nova sem depender de chaves SSH, credenciais ou dados sensíveis.
 

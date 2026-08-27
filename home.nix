@@ -53,6 +53,9 @@ in
     winbox
     socat
     jq
+    xdg-user-dirs
+    cliphist
+    wl-clipboard
   ];
 
   # Variáveis de sessão do usuário
@@ -81,6 +84,23 @@ in
       "x-scheme-handler/https" = "firefox.desktop";
       "x-scheme-handler/about" = "firefox.desktop";
       "x-scheme-handler/unknown" = "firefox.desktop";
+    };
+  };
+
+  # Padronização declarativa de diretórios de usuário XDG
+  xdg.userDirs = {
+    enable = true;
+    createDirectories = true;
+    desktop = "${config.home.homeDirectory}/Desktop";
+    documents = "${config.home.homeDirectory}/Documents";
+    download = "${config.home.homeDirectory}/Downloads";
+    music = "${config.home.homeDirectory}/Music";
+    pictures = "${config.home.homeDirectory}/Pictures";
+    videos = "${config.home.homeDirectory}/Videos";
+    templates = "${config.home.homeDirectory}/Templates";
+    publicShare = "${config.home.homeDirectory}/Public";
+    extraConfig = {
+      XDG_PROJECTS_DIR = "${config.home.homeDirectory}/Projects";
     };
   };
 
@@ -138,7 +158,7 @@ State=AAAA/wAAAAD9AAAAAwAAAAAAAAAAAAAAAPwCAAAAAvsAAAAUAHAAbABhAGMAZQBzAEQAbwBjAG
 EOF
   '';
 
-  # Configuração de temas GTK e Cursor
+  # Configuração de temas GTK, Marcadores e Cursor
   gtk = {
     enable = true;
     font = {
@@ -153,6 +173,14 @@ EOF
       name = "Bibata-Modern-Classic";
       size = 24;
     };
+    gtk3.bookmarks = [
+      "file://${config.home.homeDirectory}/Documents Documents"
+      "file://${config.home.homeDirectory}/Downloads Downloads"
+      "file://${config.home.homeDirectory}/Pictures Pictures"
+      "file://${config.home.homeDirectory}/Music Music"
+      "file://${config.home.homeDirectory}/Videos Videos"
+      "file://${config.home.homeDirectory}/Projects Projects"
+    ];
   };
 
   home.pointerCursor = {
