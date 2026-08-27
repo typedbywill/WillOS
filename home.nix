@@ -95,6 +95,7 @@ in
   xdg.configFile."hypr/scripts/auto-virtual-display.sh" = { source = ./dotfiles/hypr/scripts/auto-virtual-display.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/workspace.sh" = { source = ./dotfiles/hypr/scripts/workspace.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/toggle-special.sh" = { source = ./dotfiles/hypr/scripts/toggle-special.sh; force = true; executable = true; };
+  xdg.configFile."hypr/scripts/cycle-audio-source.sh" = { source = ./dotfiles/hypr/scripts/cycle-audio-source.sh; force = true; executable = true; };
   xdg.configFile."kitty/kitty.conf" = { source = ./dotfiles/kitty/kitty.conf; force = true; };
   xdg.configFile."caelestia/shell.json" = { source = ./dotfiles/caelestia/shell.json; force = true; };
   xdg.configFile."caelestia/cli.json" = { source = ./dotfiles/caelestia/cli.json; force = true; };
@@ -123,6 +124,20 @@ in
     fi
   '';
 
+  # Garante layout moderno e limpo para o Dolphin sem painéis sobrepostos
+  home.activation.ensureDolphinState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    STATE_DIR="${config.home.homeDirectory}/.local/state"
+    mkdir -p "$STATE_DIR"
+    cat << 'EOF' > "$STATE_DIR/dolphinstaterc"
+[FilterBar]
+caseSensitive=false
+filterMode=1
+
+[State]
+State=AAAA/wAAAAD9AAAAAwAAAAAAAAAAAAAAAPwCAAAAAvsAAAAUAHAAbABhAGMAZQBzAEQAbwBjAGsBAAAAAP////8AAAAeAP////sAAAAWAGYAbwBsAGQAZQByAHMARABvAGMAawAAAAAA/////wAAAB4A////AAAAAQAAAAAAAAAA/AIAAAAB+wAAABAAaQBuAGYAbwBEAG8AYwBrAAAAAAD/////AAAAHgD///8AAAADAAAAAAAAAAD8AQAAAAH7AAAAGAB0AGUAcgBtAGkAbgBhAGwARABvAGMAawAAAAAA/////wAAAFwA////AAAAAAAAAAAAAAAEAAAABAAAAAgAAAAI/AAAAAEAAAACAAAAAQAAABYAbQBhAGkAbgBUAG8AbwBsAEIAYQByAQAAAAD/////AAAAAAAAAAA=
+EOF
+  '';
+
   # Configuração de temas GTK e Cursor
   gtk = {
     enable = true;
@@ -131,7 +146,7 @@ in
       size = 11;
     };
     iconTheme = {
-      name = "kora-grey";
+      name = "kora-pgrey";
       package = pkgs.kora-icon-theme;
     };
     cursorTheme = {

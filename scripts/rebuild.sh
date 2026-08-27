@@ -65,7 +65,7 @@ send_notify() {
     local title="$2"
     local body="$3"
     if command -v notify-send >/dev/null 2>&1; then
-        notify-send -u "$urgency" -a "NixOS Core Engine" -i "system-software-update" "$title" "$body" 2>/dev/null || true
+        notify-send -u "$urgency" -a "WillOS Core Engine" -i "system-software-update" "$title" "$body" 2>/dev/null || true
     fi
 }
 
@@ -90,17 +90,17 @@ print_header() {
     fi
 
     echo -e "${C_BORDER}╭─────────────────────────────────────────────────────────────────────────────╮${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_CYAN}███╗   ██╗██╗██╗  ██╗ ██████╗ ███████╗   ██╗   ██╗██████╗           ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_BLUE}████╗  ██║██║╚██╗██╔╝██╔═══██╗██╔════╝   ██║   ██║██╔══██╗          ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_PURPLE}██╔██╗ ██║██║ ╚███╔╝ ██║   ██║███████╗   ██║   ██║██████╔╝          ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_PURPLE}██║╚██╗██║██║ ██╔██╗ ██║   ██║╚════██║   ██║   ██║██╔═══╝           ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_MAGENTA}██║ ╚████║██║██╔╝ ██╗╚██████╔╝███████║██╗╚██████╔╝██║               ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_MAGENTA}╚═╝  ╚═══╝╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝ ╚═════╝ ╚═╝               ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_CYAN}██╗    ██╗██╗██╗     ██╗      ██████╗ ███████╗${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_BLUE}██║    ██║██║██║     ██║     ██╔═══██╗██╔════╝${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_PURPLE}██║ █╗ ██║██║██║     ██║     ██║   ██║███████╗${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_PURPLE}██║███╗██║██║██║     ██║     ██║   ██║╚════██║${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_MAGENTA}╚███╔███╔╝██║███████╗███████╗╚██████╔╝███████║${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}               ${C_MAGENTA}╚══╝╚══╝ ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚══════╝${C_RESET}                 ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}│${C_RESET}                                                                             ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}   ${C_BOLD}${C_YELLOW}⚡  N I X O S   S Y S T E M   C O R E   U P G R A D E   v 2 . 0  ⚡${C_RESET}    ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}   ${C_BOLD}${C_YELLOW}⚡  W I L L O S   S Y S T E M   C O R E   U P G R A D E   v 2 . 0  ⚡${C_RESET}    ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
-    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Host:${C_RESET} ${C_CYAN}%-8s${C_RESET}  ${C_MUTED}🐧 Kernel:${C_RESET} ${C_BLUE}%-15s${C_RESET}  ${C_MUTED}🏷️  Geração Atual:${C_RESET} ${C_YELLOW}#%-4s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$host_name" "$kernel_ver" "$current_gen"
-    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🌿 Branch:${C_RESET} ${C_PURPLE}%-6s${C_RESET}  ${C_MUTED}📅 Data:${C_RESET} ${C_MUTED}%-20s${C_RESET}  ${C_MUTED}👤 User:${C_RESET} ${C_GREEN}%-10s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$branch" "$now_str" "$USER"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Sistema:${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_MUTED}🐧 Kernel:${C_RESET} ${C_BLUE}%-15s${C_RESET}  ${C_MUTED}🏷️  Geração Atual:${C_RESET} ${C_YELLOW}#%-4s${C_RESET} ${C_BORDER}│${C_RESET}\n" "WillOS [${host_name}]" "$kernel_ver" "$current_gen"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🌿 Branch:${C_RESET}  ${C_PURPLE}%-14s${C_RESET} ${C_MUTED}📅 Data:${C_RESET}   ${C_MUTED}%-15s${C_RESET}  ${C_MUTED}👤 Operador:${C_RESET}      ${C_GREEN}%-4s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$branch" "$now_str" "$USER"
     echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────────────────────╯${C_RESET}"
     echo ""
 }
@@ -411,9 +411,9 @@ main() {
     print_step_done "Flake indexado e pronto para compilação."
 
     # ==========================================================================
-    # FASE 3: COMPILAÇÃO & ATIVAÇÃO DO SISTEMA NIXOS
+    # FASE 3: COMPILAÇÃO & ATIVAÇÃO DO SISTEMA
     # ==========================================================================
-    print_step_header "3" "$total_steps" "⚡" "Compilação & Ativação do Sistema NixOS ($action)"
+    print_step_header "3" "$total_steps" "⚡" "Compilação & Ativação do WillOS ($action)"
 
     # Limpeza preventiva e resolução de conflitos de unidades transientes do systemd
     if sudo systemctl is-active --quiet nixos-rebuild-switch-to-configuration.service 2>/dev/null; then
@@ -424,13 +424,13 @@ main() {
     fi
     sudo systemctl reset-failed nixos-rebuild-switch-to-configuration.service 2>/dev/null || true
 
-    if ! run_with_dynamic_hud "Motor de Rebuild do NixOS" "Iniciando compilação do sistema..." sudo nixos-rebuild "$action" --flake "$REPO_DIR" "${rebuild_args[@]}"; then
-        print_step_fail "Falha durante a reconstrução do NixOS."
+    if ! run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema..." sudo nixos-rebuild "$action" --flake "$REPO_DIR" "${rebuild_args[@]}"; then
+        print_step_fail "Falha durante a reconstrução do WillOS."
         play_sound "error"
-        send_notify "critical" "❌ Erro no Rebuild NixOS" "A compilação do sistema falhou. Verifique os logs no terminal."
+        send_notify "critical" "❌ Erro no Rebuild WillOS" "A compilação do sistema falhou. Verifique os logs no terminal."
 
         echo -e "${C_RED}╔═════════════════════════════════════════════════════════════════════════════╗${C_RESET}"
-        echo -e "${C_RED}║  ❌  FALHA NA RECONSTRUÇÃO DO SISTEMA NIXOS                                 ║${C_RESET}"
+        echo -e "${C_RED}║  ❌  FALHA NA RECONSTRUÇÃO DO WILLOS                                        ║${C_RESET}"
         echo -e "${C_RED}╠═════════════════════════════════════════════════════════════════════════════╣${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  ⚠️  Ocorreu um erro durante a compilação ou ativação da configuração.      ${C_RED}║${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  🛡️  A geração anterior (${C_YELLOW}#${old_gen_num}${C_RESET}) permanece 100% segura e ativa.          ${C_RED}║${C_RESET}"
@@ -528,7 +528,7 @@ main() {
         if [ -z "$commit_msg" ]; then
             local ts
             ts=$(date "+%Y-%m-%d %H:%M:%S")
-            commit_msg="rebuild(nixos): Gen #${new_gen_num} • ${ts}"
+            commit_msg="rebuild(willos): Gen #${new_gen_num} • ${ts}"
         fi
 
         if git -C "$REPO_DIR" commit -m "$commit_msg" >/dev/null 2>&1; then
@@ -566,10 +566,10 @@ main() {
     printf -v time_formatted "%02dm %02ds" "$elapsed_min" "$elapsed_sec"
 
     echo -e "${C_BORDER}╔═════════════════════════════════════════════════════════════════════════════╗${C_RESET}"
-    echo -e "${C_BORDER}║  ${C_BOLD}${C_GREEN}🎉  S I S T E M A   R E C O N S T R U Í D O   C O M   S U C E S S O !${C_RESET}         ${C_BORDER}║${C_RESET}"
+    echo -e "${C_BORDER}║  ${C_BOLD}${C_GREEN}🎉  W I L L O S   A T U A L I Z A D O   C O M   S U C E S S O !${C_RESET}               ${C_BORDER}║${C_RESET}"
     echo -e "${C_BORDER}╠═════════════════════════════════════════════════════════════════════════════╣${C_RESET}"
     echo -e "${C_BORDER}║                                                                             ║${C_RESET}"
-    printf "${C_BORDER}║${C_RESET}  ${C_MUTED}🏷️   Geração NixOS      :${C_RESET}  ${C_YELLOW}Geração #%-3s${C_RESET} ──▶  ${C_BOLD}${C_GREEN}Geração #%-3s (ATIVADA)${C_RESET}      ${C_BORDER}║${C_RESET}\n" "$old_gen_num" "$new_gen_num"
+    printf "${C_BORDER}║${C_RESET}  ${C_MUTED}🏷️   Geração WillOS     :${C_RESET}  ${C_YELLOW}Geração #%-3s${C_RESET} ──▶  ${C_BOLD}${C_GREEN}Geração #%-3s (ATIVADA)${C_RESET}      ${C_BORDER}║${C_RESET}\n" "$old_gen_num" "$new_gen_num"
     printf "${C_BORDER}║${C_RESET}  ${C_MUTED}⏱️   Tempo de Operação  :${C_RESET}  ${C_CYAN}%-43s${C_RESET} ${C_BORDER}║${C_RESET}\n" "$time_formatted"
     if [ "$count_added" -gt 0 ] || [ "$count_updated" -gt 0 ] || [ "$count_removed" -gt 0 ]; then
         local summary_diff="${C_GREEN}+${count_added} novos${C_RESET}, ${C_YELLOW}~${count_updated} atualizados${C_RESET}, ${C_RED}-${count_removed} removidos${C_RESET}"
@@ -581,12 +581,12 @@ main() {
     printf "${C_BORDER}║${C_RESET}  ${C_MUTED}🛡️   Status do Kernel   :${C_RESET}  ${C_BLUE}%-43s${C_RESET} ${C_BORDER}║${C_RESET}\n" "$kernel_ver (100% Estável)"
     printf "${C_BORDER}║${C_RESET}  ${C_MUTED}✨  Ambiente Visual    :${C_RESET}  ${C_MAGENTA}%-43s${C_RESET} ${C_BORDER}║${C_RESET}\n" "Hyprland + Caelestia Shell Operacionais"
     echo -e "${C_BORDER}║                                                                             ║${C_RESET}"
-    echo -e "${C_BORDER}║  ${C_BOLD}${C_CYAN}🚀 O seu NixOS está turbinado, atualizado e pronto para uso!${C_RESET}               ${C_BORDER}║${C_RESET}"
+    echo -e "${C_BORDER}║  ${C_BOLD}${C_CYAN}🚀 O seu WillOS está turbinado, atualizado e pronto para uso!${C_RESET}               ${C_BORDER}║${C_RESET}"
     echo -e "${C_BORDER}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
 
     # Notificação no Desktop & Som de Conclusão
     play_sound "success"
-    send_notify "normal" "🚀 NixOS Atualizado com Sucesso!" "Geração #${new_gen_num} ativada em ${time_formatted}."
+    send_notify "normal" "🚀 WillOS Atualizado com Sucesso!" "Geração #${new_gen_num} ativada em ${time_formatted}."
 }
 
 main "$@"

@@ -2,8 +2,8 @@
   "theme": {
     "enableQt": true,
     "enableGtk": true,
-    "iconThemeDark": "kora-grey",
-    "iconThemeLight": "kora-grey",
+    "iconThemeDark": "kora-pgrey",
+    "iconThemeLight": "kora-pgrey",
     "postHook": "bash /home/william/.config/caelestia/sync-kde.sh"
   },
   "toggles": {

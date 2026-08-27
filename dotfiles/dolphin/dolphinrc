@@ -7,24 +7,39 @@ ExpandableFolders=true
 IconSize=22
 PreviewSize=22
 
+[FoldersPanel]
+Visible=false
+
 [General]
+AutoExpandFolders=false
 BrowseThroughArchives=true
 Confirm=
 EditableUrl=false
 GlobalViewProps=true
+NaturalSorting=true
 OpenSingleClick=false
 RememberOpenedTabs=false
+RenameInline=true
 ShowFullPath=false
 ShowFullPathInTitlebar=false
 ShowSelectionToggle=false
-ShowToolTips=true
+ShowSpaceInfo=false
+ShowStatusBar=true
+ShowToolTips=false
+ShowZoomSlider=false
+SortFoldersFirst=true
 Version=202
-ViewPropsTimestamp=2026,8,23,17,0,0.0
+ViewMode=0
+ViewPropsTimestamp=2026,8,27,15,0,0.0
 
 [IconsMode]
-IconSize=48
+IconSize=64
 MaximumTextLines=2
-PreviewSize=96
+PreviewSize=64
+
+[InformationPanel]
+DateFormat=ShortDate
+Visible=false
 
 [KFileDialog Settings]
 Places Icons Auto-resize=false
@@ -34,11 +49,24 @@ Places Icons Static Size=22
 MenuBar=Disabled
 ToolBarsMovable=Disabled
 
+[PanelGlobals]
+PanelPosRight=false
+
 [PlacesPanel]
 IconSize=22
+Places Icons Auto-resize=false
+Places Icons Static Size=22
+Visible=true
 
 [PreviewSettings]
 Plugins=audiothumbnail,comicbookthumbnail,djvuthumbnail,dveditorthumbnail,exrthumbnail,directorythumbnail,fontthumbnail,imagethumbnail,jpegthumbnail,kraimagethumbnail,svgthumbnail,textthumbnail,windowsexethumbnail,windowsimagethumbnail,opendocumentthumbnail,gsthumbnail,rawthumbnail,ebookthumbnail,appimage,blenderthumbnail,gamedatathumbnail,mobithumbnail,ffmpegthumbs
+
+[TerminalPanel]
+Visible=false
+
+[Toolbar mainToolBar]
+IconSize=22
+ToolButtonStyle=IconOnly
 
 [UiSettings]
 ColorScheme=Caelestia
