@@ -2,6 +2,7 @@
 
 let
   chatgpt = pkgs.callPackage ./pkgs/chatgpt.nix {};
+  winbox = pkgs.callPackage ./pkgs/winbox.nix {};
 in
 {
   home.username = "william";
@@ -21,12 +22,15 @@ in
     spotify
     zapzap
     telegram-desktop
-    mysql-workbench
-    mongodb-compass
-    postman
     papirus-icon-theme
     papirus-folders
     kora-icon-theme
+    libreoffice-stable
+    hunspell
+    hunspellDicts.pt_BR
+    mysql-workbench
+    mongodb-compass
+    postman
     kdePackages.dolphin
     kdePackages.breeze
     kdePackages.breeze-icons
@@ -46,6 +50,7 @@ in
     bun
     moonlight-qt
     rustdesk-flutter
+    winbox
     socat
     jq
   ];
@@ -55,7 +60,7 @@ in
     BROWSER = "firefox";
     DEFAULT_BROWSER = "${pkgs.firefox}/bin/firefox";
     FILEMANAGER = "dolphin";
-    QT_QPA_PLATFORM = "wayland";
+    QT_QPA_PLATFORM = "wayland;xcb";
     QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
   };
 
@@ -89,6 +94,7 @@ in
   xdg.configFile."hypr/hyprlock.conf" = { source = ./dotfiles/hypr/hyprlock.conf; force = true; };
   xdg.configFile."hypr/scripts/auto-virtual-display.sh" = { source = ./dotfiles/hypr/scripts/auto-virtual-display.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/workspace.sh" = { source = ./dotfiles/hypr/scripts/workspace.sh; force = true; executable = true; };
+  xdg.configFile."hypr/scripts/toggle-special.sh" = { source = ./dotfiles/hypr/scripts/toggle-special.sh; force = true; executable = true; };
   xdg.configFile."kitty/kitty.conf" = { source = ./dotfiles/kitty/kitty.conf; force = true; };
   xdg.configFile."caelestia/shell.json" = { source = ./dotfiles/caelestia/shell.json; force = true; };
   xdg.configFile."caelestia/cli.json" = { source = ./dotfiles/caelestia/cli.json; force = true; };

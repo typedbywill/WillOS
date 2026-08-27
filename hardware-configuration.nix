@@ -6,38 +6,30 @@
     (modulesPath + "/installer/scan/not-detected.nix")
   ];
 
-  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usbhid" "usb_storage" "uas" "sd_mod" ];
+  boot.initrd.availableKernelModules = [ "xhci_pci" "thunderbolt" "nvme" "usbhid" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-amd" ];
+  boot.kernelModules = [ "kvm-intel" ];
   boot.extraModulePackages = [ ];
 
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/7fa6db06-b42b-49bf-afc3-763787f91203";
+    device = "/dev/mapper/luks-44f45ba6-d512-4baf-a9e0-c93b93ba2972";
     fsType = "ext4";
   };
 
+  boot.initrd.luks.devices."luks-44f45ba6-d512-4baf-a9e0-c93b93ba2972".device = "/dev/disk/by-uuid/44f45ba6-d512-4baf-a9e0-c93b93ba2972";
+  boot.initrd.luks.devices."luks-e8a8b967-3ca5-47a0-8fb4-45b5ede67f91".device = "/dev/disk/by-uuid/e8a8b967-3ca5-47a0-8fb4-45b5ede67f91";
+
   fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/742E-4962";
+    device = "/dev/disk/by-uuid/C167-2CF2";
     fsType = "vfat";
     options = [ "fmask=0077" "dmask=0077" ];
   };
 
-  fileSystems."/mnt/Dados" = {
-    device = "/dev/disk/by-uuid/1AC43C3FC43C2005";
-    fsType = "ntfs";
-    options = [ "rw" "uid=1000" "gid=100" "dmask=0022" "fmask=0133" "nofail" ];
-  };
-
-  fileSystems."/mnt/DadosLinux" = {
-    device = "/dev/disk/by-uuid/fa2ac10d-121a-4fdb-9e08-6b46ed74ca66";
-    fsType = "ext4";
-  };
-
   swapDevices = [
-    { device = "/dev/disk/by-uuid/a86dfe49-531f-45f5-9762-5ed8e86451f7"; }
+    { device = "/dev/mapper/luks-e8a8b967-3ca5-47a0-8fb4-45b5ede67f91"; }
   ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-  myHardware.gpu.type = lib.mkDefault "nvidia";
+  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  myHardware.gpu.type = lib.mkDefault "intel";
 }

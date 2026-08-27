@@ -82,6 +82,21 @@
   };
   programs.hyprlock.enable = true;
 
+  # Evita que a terminação de um processo filho por OOM encerre toda a sessão do Hyprland
+  systemd.user.services."wayland-wm@" = {
+    serviceConfig = {
+      OOMPolicy = "continue";
+    };
+  };
+
+  # Swap comprimido em RAM (zram) com 100% do tamanho da memória RAM
+  zramSwap = {
+    enable = true;
+    memoryPercent = 100;
+    algorithm = "zstd";
+    priority = 10;
+  };
+
   programs.dconf.enable = true;
   programs.steam = {
     enable = true;
