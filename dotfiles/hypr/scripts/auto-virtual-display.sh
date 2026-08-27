@@ -74,28 +74,33 @@ rescue_orphaned_windows() {
     active_mon_ids=$(echo "$monitors_json" | jq '[.[].id]')
     active_mon_names=$(echo "$monitors_json" | jq '[.[].name]')
 
-    # 1. Resgata janelas de workspaces regulares vinculadas a monitores desconectados
-    local orphaned_addresses
-    orphaned_addresses=$(echo "$clients_json" | jq -r --argjson active_ids "$active_mon_ids" '
-        .[] | select(.workspace.id > 0 and (.monitor as $m | ($active_ids | index($m)) == null)) | .address
-    ')
-
-    for addr in $orphaned_addresses; do
-        [ -z "$addr" ] && continue
-        log "Movendo janela órfã $addr para o workspace ativo $target_ws ($target_mon)..."
-        hyprctl dispatch movetoworkspacesilent "$target_ws,address:$addr" >/dev/null 2>&1
-    done
-
-    # 2. Resgata workspaces com janelas cujo monitor não existe mais
+    # 1. Resgata workspaces órfãos movendo o workspace inteiro para o monitor ativo.
+    # Isso preserva todas as janelas em seus workspaces de origem (ex: WS 1 mantém suas janelas intactas).
     if [ -n "$workspaces_json" ] && [ "$workspaces_json" != "[]" ]; then
         local orphaned_ws_ids
         orphaned_ws_ids=$(echo "$workspaces_json" | jq -r --argjson active_names "$active_mon_names" '
-            .[] | select(.id > 0 and .windows > 0 and (.monitor as $m | ($active_names | index($m)) == null)) | .id
+            .[] | select(.id > 0 and (.monitor as $m | ($active_names | index($m)) == null)) | .id
         ')
         for ws_id in $orphaned_ws_ids; do
             [ -z "$ws_id" ] && continue
             log "Movendo workspace órfão $ws_id para o monitor ativo $target_mon..."
             hyprctl dispatch moveworkspacetomonitor "$ws_id" "$target_mon" >/dev/null 2>&1
+        done
+    fi
+
+    # 2. Resgata janelas que porventura ainda estejam órfãs após a movimentação de workspaces
+    local clients_after
+    clients_after=$(hyprctl -j clients 2>/dev/null)
+    if [ -n "$clients_after" ] && [ "$clients_after" != "[]" ]; then
+        local orphaned_addresses
+        orphaned_addresses=$(echo "$clients_after" | jq -r --argjson active_ids "$active_mon_ids" '
+            .[] | select(.workspace.id > 0 and (.monitor as $m | ($active_ids | index($m)) == null)) | .address
+        ')
+
+        for addr in $orphaned_addresses; do
+            [ -z "$addr" ] && continue
+            log "Movendo janela individual órfã $addr para o workspace ativo $target_ws ($target_mon)..."
+            hyprctl dispatch movetoworkspacesilent "$target_ws,address:$addr" >/dev/null 2>&1
         done
     fi
 }

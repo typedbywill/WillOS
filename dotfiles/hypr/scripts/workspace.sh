@@ -35,7 +35,7 @@ fi
 
 # Extrai o nome do monitor focado e calcula o workspace de destino ordenado por posição horizontal X
 read -r FOCUSED_MON TARGET_WS < <(echo "$monitors_json" | jq -r --argjson num "$NUM" --argjson per_mon "$WS_PER_MONITOR" '
-    (sort_by(.x) | to_entries[] | select(.value.focused == true)) as $entry
+    (sort_by(.x) | to_entries | (map(select(.value.focused == true))[0] // .[0])) as $entry
     | ($entry.key // 0) as $idx
     | ($entry.value.name // "DP-1") as $name
     | "\($name) \((($idx * $per_mon) + $num))"

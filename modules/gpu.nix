@@ -7,7 +7,7 @@ in
   options.myHardware.gpu = {
     type = lib.mkOption {
       type = lib.types.enum [ "intel" "nvidia" "hybrid-intel-nvidia" "amd" "none" ];
-      default = "intel";
+      default = "none";
       description = "Tipo de GPU da máquina: 'intel', 'nvidia', 'hybrid-intel-nvidia', 'amd', ou 'none'";
     };
     nvidia = {

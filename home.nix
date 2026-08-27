@@ -21,6 +21,9 @@ in
     spotify
     zapzap
     telegram-desktop
+    mysql-workbench
+    mongodb-compass
+    postman
     papirus-icon-theme
     papirus-folders
     kora-icon-theme

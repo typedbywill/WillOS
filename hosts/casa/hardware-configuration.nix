@@ -28,10 +28,16 @@
     options = [ "rw" "uid=1000" "gid=100" "dmask=0022" "fmask=0133" "nofail" ];
   };
 
+  fileSystems."/mnt/DadosLinux" = {
+    device = "/dev/disk/by-uuid/fa2ac10d-121a-4fdb-9e08-6b46ed74ca66";
+    fsType = "ext4";
+  };
+
   swapDevices = [
     { device = "/dev/disk/by-uuid/a86dfe49-531f-45f5-9762-5ed8e86451f7"; }
   ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  myHardware.gpu.type = lib.mkDefault "nvidia";
 }
