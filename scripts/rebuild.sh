@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #  ⚡ NIXOS SYSTEM CORE UPGRADE & REBUILD ENGINE ⚡
-#  Visual dinâmico, moderno e informativo para reconstrução do NixOS
+#  Motor de reconstrução ultra-dinâmico, interativo e cinematográfico
 # ==============================================================================
 
 set -eo pipefail
 
 # ------------------------------------------------------------------------------
-# 🎨 PALETA DE CORES ANSI TRUECOLOR (24-BIT) & ESTILOS VISUAIS
+# 🎨 PALETA DE CORES ANSI TRUECOLOR (24-BIT) & ESTILOS
 # ------------------------------------------------------------------------------
 C_RESET="\033[0m"
 C_BOLD="\033[1m"
@@ -16,20 +16,32 @@ C_ITALIC="\033[3m"
 C_UNDERLINE="\033[4m"
 
 # Gradientes Neon (Caelestia / Cyberpunk Vibe)
-C_CYAN="\033[38;2;56;189;248m"       # Sky Blue (#38bdf8)
-C_BLUE="\033[38;2;96;165;250m"       # Light Blue (#60a5fa)
-C_PURPLE="\033[38;2;192;132;252m"    # Violet (#c084fc)
-C_MAGENTA="\033[38;2;232;121;249m"   # Neon Pink (#e879f9)
-C_GREEN="\033[38;2;74;222;128m"      # Emerald Neon (#4ade80)
-C_YELLOW="\033[38;2;251;191;36m"     # Amber/Gold (#fbbf24)
-C_ORANGE="\033[38;2;251;146;60m"     # Sunset Orange (#fb923c)
-C_RED="\033[38;2;248;113;113m"       # Rose Red (#f87171)
-C_MUTED="\033[38;2;148;163;184m"     # Slate Gray (#94a3b8)
-C_DARK="\033[38;2;71;85;105m"        # Deep Slate (#475569)
-C_BORDER="\033[38;2;139;92;246m"     # Neon Purple Border (#8b5cf6)
-C_BORDER_ACCENT="\033[38;2;59;130;246m" # Neon Blue Border (#3b82f6)
+C_CYAN="\033[38;2;56;189;248m"          # #38bdf8
+C_BLUE="\033[38;2;96;165;250m"          # #60a5fa
+C_PURPLE="\033[38;2;192;132;252m"       # #c084fc
+C_MAGENTA="\033[38;2;232;121;249m"      # #e879f9
+C_GREEN="\033[38;2;74;222;128m"         # #4ade80
+C_YELLOW="\033[38;2;251;191;36m"        # #fbbf24
+C_ORANGE="\033[38;2;251;146;60m"        # #fb923c
+C_RED="\033[38;2;248;113;113m"          # #f87171
+C_MUTED="\033[38;2;148;163;184m"        # #94a3b8
+C_DARK="\033[38;2;71;85;105m"           # #475569
+C_BORDER="\033[38;2;139;92;246m"        # #8b5cf6
+C_BORDER_ACCENT="\033[38;2;59;130;246m" # #3b82f6
 
 REPO_DIR="${REPO_DIR:-/home/william/nixos-hyprland-caelestia}"
+SUDO_PID=""
+
+# ------------------------------------------------------------------------------
+# 🛡️ LIMPEZA E TRAPS (Ctrl+C)
+# ------------------------------------------------------------------------------
+cleanup() {
+    tput cnorm 2>/dev/null || printf "\033[?25h" 2>/dev/null || true
+    if [ -n "$SUDO_PID" ]; then
+        kill "$SUDO_PID" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT INT TERM
 
 # ------------------------------------------------------------------------------
 # 🔊 SONS E NOTIFICAÇÕES
@@ -53,12 +65,12 @@ send_notify() {
     local title="$2"
     local body="$3"
     if command -v notify-send >/dev/null 2>&1; then
-        notify-send -u "$urgency" -a "NixOS Rebuild Engine" -i "system-software-update" "$title" "$body" 2>/dev/null || true
+        notify-send -u "$urgency" -a "NixOS Core Engine" -i "system-software-update" "$title" "$body" 2>/dev/null || true
     fi
 }
 
 # ------------------------------------------------------------------------------
-# 💻 CABEÇALHO & TELEMETRIA
+# 💻 CABEÇALHO CYBERPUNK & TELEMETRIA
 # ------------------------------------------------------------------------------
 print_header() {
     local host_name
@@ -66,11 +78,16 @@ print_header() {
     local kernel_ver
     kernel_ver=$(uname -r 2>/dev/null || echo "Linux")
     local current_gen
-    current_gen=$(readlink /nix/var/nix/profiles/system 2>/dev/null | grep -o 'system-[0-9]\+-link' | grep -o '[0-9]\+' || echo "?")
+    current_gen=$(readlink /nix/var/nix/profiles/system 2>/dev/null | grep -o 'system-[0-9]\+-link' | grep -o '[0-9]\+' || echo "1")
     local branch
     branch=$(git -C "$REPO_DIR" branch --show-current 2>/dev/null || echo "main")
     local now_str
     now_str=$(date "+%d/%m/%Y • %H:%M:%S")
+
+    # Limpa a tela de forma segura usando escape code ANSI
+    if [ -t 1 ]; then
+        printf "\033[H\033[2J" 2>/dev/null || true
+    fi
 
     echo -e "${C_BORDER}╭─────────────────────────────────────────────────────────────────────────────╮${C_RESET}"
     echo -e "${C_BORDER}│${C_RESET}  ${C_CYAN}███╗   ██╗██╗██╗  ██╗ ██████╗ ███████╗   ██╗   ██╗██████╗           ${C_BORDER}│${C_RESET}"
@@ -88,7 +105,7 @@ print_header() {
     echo ""
 }
 
-print_step() {
+print_step_header() {
     local step_num="$1"
     local step_total="$2"
     local icon="$3"
@@ -107,14 +124,132 @@ print_step_done() {
     echo -e "${C_PURPLE}╰── ${C_GREEN}✔ ${msg}${C_RESET}\n"
 }
 
-print_step_warn() {
-    local msg="$1"
-    echo -e "${C_PURPLE}╰── ${C_YELLOW}⚠️  ${msg}${C_RESET}\n"
-}
-
 print_step_fail() {
     local msg="$1"
     echo -e "${C_PURPLE}╰── ${C_RED}✖ ${msg}${C_RESET}\n"
+}
+
+# ------------------------------------------------------------------------------
+# 🌀 MOTOR DE EXECUÇÃO COM HUD DINÂMICO & SPINNER EM TEMPO REAL
+# ------------------------------------------------------------------------------
+run_with_dynamic_hud() {
+    local title="$1"
+    local default_status="$2"
+    shift 2
+    local cmd=("$@")
+
+    local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+    local spin_colors=("$C_CYAN" "$C_BLUE" "$C_PURPLE" "$C_MAGENTA")
+    
+    local logfile
+    logfile=$(mktemp /tmp/rebuild_task.XXXXXX)
+
+    # Executa o comando em segundo plano capturando saída completa
+    "${cmd[@]}" > "$logfile" 2>&1 &
+    local pid=$!
+
+    # Esconde o cursor
+    tput civis 2>/dev/null || printf "\033[?25l" 2>/dev/null || true
+
+    local start_t
+    start_t=$(date +%s)
+    local i=0
+    local status_line="$default_status"
+    local is_interactive=false
+    if [ -t 1 ]; then
+        is_interactive=true
+    fi
+
+    if [ "$is_interactive" = true ]; then
+        # Reserva 3 linhas dinâmicas no terminal
+        printf "\n\n\n\033[3A" 2>/dev/null || true
+    fi
+
+    while kill -0 "$pid" 2>/dev/null; do
+        local frame="${frames[$((i % ${#frames[@]}))]}"
+        local color="${spin_colors[$(( (i / 2) % ${#spin_colors[@]} ))]}"
+        local curr_t
+        curr_t=$(date +%s)
+        local elapsed=$((curr_t - start_t))
+        local min=$((elapsed / 60))
+        local sec=$((elapsed % 60))
+
+        # Analisa o arquivo de log em tempo real para exibir o status inteligente
+        if [ -s "$logfile" ]; then
+            local raw_last
+            raw_last=$(tail -n 1 "$logfile" 2>/dev/null | tr -d '\r\n' || echo "")
+            if [[ "$raw_last" =~ building.*\.drv ]]; then
+                local drv_name
+                drv_name=$(echo "$raw_last" | sed "s/.*building '\/nix\/store\/[^-]*-//" | sed "s/\.drv'.*//" | cut -c1-35)
+                status_line="⚙️  Compilando: ${drv_name}..."
+            elif [[ "$raw_last" =~ copying.*path ]]; then
+                status_line="📥 Baixando & copiando closures da Nix Store..."
+            elif [[ "$raw_last" =~ updating.*menu|systemd-boot|grub ]]; then
+                status_line="🛡️  Configurando entradas do bootloader..."
+            elif [[ "$raw_last" =~ activating.*configuration ]]; then
+                status_line="🚀 Ativando nova geração e serviços systemd..."
+            elif [[ "$raw_last" =~ reloading|restarting ]]; then
+                status_line="🔄 Recarregando daemons de usuário..."
+            elif [[ "$raw_last" =~ eval ]]; then
+                status_line="🧠 Avaliando expressões Flake e Nixpkgs..."
+            elif [ -n "$raw_last" ]; then
+                status_line="$(echo "$raw_last" | cut -c1-55)"
+            fi
+        fi
+
+        # Barra de pulso neon animada
+        local bar_pos=$((i % 20))
+        local bar=""
+        for ((b=0; b<20; b++)); do
+            if [ $b -eq $bar_pos ] || [ $b -eq $(( (bar_pos + 1) % 20 )) ]; then
+                bar+="█"
+            elif [ $b -eq $(( (bar_pos + 2) % 20 )) ] || [ $b -eq $(( (bar_pos - 1 + 20) % 20 )) ]; then
+                bar+="▓"
+            else
+                bar+="░"
+            fi
+        done
+
+        if [ "$is_interactive" = true ]; then
+            printf "\r\033[K${C_PURPLE}│  ${color}${frame}${C_RESET} ${C_BOLD}${C_CYAN}%-38s${C_RESET} ${C_MUTED}⏱️  %02dm %02ds${C_RESET}\n" "$title" "$min" "$sec"
+            printf "\r\033[K${C_PURPLE}│  ${C_PURPLE}├─ [${C_GREEN}%s${C_PURPLE}] ${C_YELLOW}EM ANDAMENTO${C_RESET}\n" "$bar"
+            printf "\r\033[K${C_PURPLE}│  ${C_PURPLE}└─ ${C_MUTED}Status:${C_RESET} ${C_MUTED}%-55s${C_RESET}\033[2A" "$status_line"
+        fi
+
+        ((i++))
+        sleep 0.08
+    done
+
+    wait "$pid" 2>/dev/null || true
+    local exit_code=0
+    if ! wait "$pid" 2>/dev/null; then
+        exit_code=1
+    fi
+
+    # Restaura o cursor
+    tput cnorm 2>/dev/null || printf "\033[?25h" 2>/dev/null || true
+
+    local total_elapsed=$(( $(date +%s) - start_t ))
+    local min_tot=$((total_elapsed / 60))
+    local sec_tot=$((total_elapsed % 60))
+
+    if [ "$is_interactive" = true ]; then
+        # Limpa as 3 linhas do HUD
+        printf "\r\033[K\n\r\033[K\n\r\033[K\033[2A" 2>/dev/null || true
+    fi
+
+    if [ "$exit_code" -eq 0 ]; then
+        printf "\r\033[K${C_PURPLE}│  ${C_GREEN}✔${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_GREEN}concluído em %02dm %02ds!${C_RESET}\n" "$min_tot" "$sec_tot"
+        rm -f "$logfile"
+        return 0
+    else
+        printf "\r\033[K${C_PURPLE}│  ${C_RED}✖${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_RED}falhou após %02dm %02ds (Código: ${exit_code})!${C_RESET}\n\n" "$min_tot" "$sec_tot"
+        echo -e "${C_RED}─────── [ LOG DE ERRO DETALHADO ] ───────${C_RESET}"
+        tail -n 25 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
+        echo -e "${C_RED}─────────────────────────────────────────${C_RESET}\n"
+        rm -f "$logfile"
+        return "$exit_code"
+    fi
 }
 
 print_help() {
@@ -122,27 +257,27 @@ print_help() {
     echo -e "${C_BOLD}${C_CYAN}USO:${C_RESET} rebuild [OPÇÕES] [MENSAGEM_DE_COMMIT]"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}OPÇÕES:${C_RESET}"
-    echo -e "  ${C_GREEN}--upgrade, -u${C_RESET}      Atualiza os inputs do Flake (nix flake update) antes de reconstruir"
+    echo -e "  ${C_GREEN}--upgrade, -u${C_RESET}      Atualiza todos os inputs do Flake (nix flake update) antes do rebuild"
     echo -e "  ${C_GREEN}--boot${C_RESET}             Apenas adiciona a nova geração ao bootloader sem ativar imediatamente"
     echo -e "  ${C_GREEN}--show-trace${C_RESET}       Exibe o trace completo em caso de erros de compilação Nix"
-    echo -e "  ${C_GREEN}--fast, --no-pull${C_RESET}  Pula a sincronização remota do Git"
+    echo -e "  ${C_GREEN}--fast, --no-pull${C_RESET}  Pula a sincronização remota do Git (modo offline/rápido)"
     echo -e "  ${C_GREEN}--help, -h${C_RESET}         Exibe esta central de ajuda"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}EXEMPLOS:${C_RESET}"
-    echo -e "  ${C_MUTED}# Rebuild padrão com auto-commit inteligente:${C_RESET}"
+    echo -e "  ${C_MUTED}# Rebuild padrão com animação e commit inteligente:${C_RESET}"
     echo -e "  ${C_CYAN}rebuild${C_RESET}"
     echo ""
     echo -e "${C_MUTED}# Rebuild com mensagem personalizada:${C_RESET}"
-    echo -e "  ${C_CYAN}rebuild \"adicionando novo tema ao hyprland\"${C_RESET}"
+    echo -e "  ${C_CYAN}rebuild \"adicionando novos scripts e temas\"${C_RESET}"
     echo ""
-    echo -e "${C_MUTED}# Grande atualização completa com upgrade de pacotes:${C_RESET}"
-    echo -e "  ${C_CYAN}rebuild --upgrade \"grande atualização de sistema\"${C_RESET}"
+    echo -e "${C_MUTED}# Grande atualização com upgrade de todas as dependências do Flake:${C_RESET}"
+    echo -e "  ${C_CYAN}rebuild --upgrade \"grande atualização do sistema\"${C_RESET}"
     echo ""
     exit 0
 }
 
 # ------------------------------------------------------------------------------
-# 🚀 EXECUÇÃO PRINCIPAL
+# 🚀 FUNÇÃO PRINCIPAL
 # ------------------------------------------------------------------------------
 main() {
     local total_steps=5
@@ -184,11 +319,11 @@ main() {
         esac
     done
 
-    # Exibe o cabeçalho estilizado
+    # Exibe o cabeçalho dinâmico
     print_header
 
-    local start_time
-    start_time=$(date +%s)
+    local global_start_time
+    global_start_time=$(date +%s)
 
     local branch
     branch=$(git -C "$REPO_DIR" branch --show-current 2>/dev/null || echo "main")
@@ -202,27 +337,34 @@ main() {
     local old_gen_num
     old_gen_num=$(readlink /nix/var/nix/profiles/system 2>/dev/null | grep -o 'system-[0-9]\+-link' | grep -o '[0-9]\+' || echo "1")
 
+    # Validação antecipada do SUDO para que a senha não interrompa as animações
+    if ! sudo -n true 2>/dev/null; then
+        echo -e "${C_PURPLE}╭─[ 🔐 ] ${C_CYAN}Autenticação de Segurança${C_RESET}"
+        echo -e "${C_PURPLE}│  ${C_YELLOW}🔑 Por favor, informe sua senha de administrador para iniciar o Rebuild:${C_RESET}"
+        sudo -v
+        echo -e "${C_PURPLE}╰── ${C_GREEN}✔ Privilégios administrativos concedidos!${C_RESET}\n"
+    fi
+
+    # Mantém o token sudo ativo em segundo plano durante a compilação
+    while true; do sudo -n true 2>/dev/null; sleep 30; done &
+    SUDO_PID=$!
+
     # ==========================================================================
     # FASE 1: SINCRONIZAÇÃO GIT & DETECÇÃO DE ALTERAÇÕES
     # ==========================================================================
-    print_step "1" "$total_steps" "🌐" "Sincronização & Auditoria de Repositório Git"
+    print_step_header "1" "$total_steps" "🌐" "Sincronização & Auditoria de Repositório Git"
 
     if [ "$skip_pull" = true ]; then
-        print_substep "⏩" "${C_YELLOW}Modo rápido ativo:${C_RESET} Sincronização remota ignorada."
+        print_substep "⏩" "${C_YELLOW}Modo rápido:${C_RESET} Sincronização remota ignorada."
     else
-        print_substep "📡" "Verificando upstream (${C_PURPLE}origin/$branch${C_RESET})..."
-        if git -C "$REPO_DIR" pull --rebase --autostash origin "$branch" >/tmp/git_pull_log 2>&1; then
-            if grep -q "Already up to date" /tmp/git_pull_log; then
-                print_substep "✨" "Repositório local já está perfeitamente sincronizado."
-            else
-                print_substep "📥" "${C_GREEN}Atualizações remotas baixadas com sucesso!${C_RESET}"
-            fi
+        if run_with_dynamic_hud "Sincronização com origin/$branch" "Conectando ao GitHub..." git -C "$REPO_DIR" pull --rebase --autostash origin "$branch"; then
+            print_substep "✨" "Repositório local perfeitamente alinhado com a nuvem."
         else
-            print_substep "⚠️" "${C_YELLOW}Aviso:${C_RESET} Falha ao sincronizar com o Git remoto. Prosseguindo com o build local..."
+            print_substep "⚠️" "${C_YELLOW}Aviso:${C_RESET} Falha ao conectar ao upstream. Prosseguindo em modo local..."
         fi
     fi
 
-    # Detecta status de arquivos locais modificados
+    # Detecta arquivos modificados localmente
     local status_output
     status_output=$(git -C "$REPO_DIR" status --short 2>/dev/null || echo "")
     local changed_count
@@ -256,47 +398,34 @@ main() {
     print_step_done "Auditoria de repositório concluída."
 
     # ==========================================================================
-    # FASE 2: PREPARAÇÃO DO NIX FLAKE & PRÉ-FLIGHT
+    # FASE 2: PREPARAÇÃO DO NIX FLAKE & INTEGRIDADE
     # ==========================================================================
-    print_step "2" "$total_steps" "📦" "Preparação do Flake & Verificação de Integridade"
+    print_step_header "2" "$total_steps" "📦" "Preparação do Flake & Indexação"
 
-    print_substep "🔍" "Indexando todos os arquivos modificados para o Flake..."
-    git -C "$REPO_DIR" add -A
+    run_with_dynamic_hud "Indexação de Arquivos para o Flake" "Adicionando alterações ao índice Git..." git -C "$REPO_DIR" add -A
 
     if [ "$do_flake_update" = true ]; then
-        print_substep "🔄" "${C_YELLOW}Atualizando todos os inputs do Flake (nix flake update)...${C_RESET}"
-        nix flake update --flake "$REPO_DIR"
+        run_with_dynamic_hud "Atualização de Inputs do Flake" "Executando nix flake update..." nix flake update --flake "$REPO_DIR"
     fi
 
-    # Validação de sudo antecipada
-    print_substep "🔐" "Validando privilégios de superusuário (sudo)..."
-    if ! sudo -n true 2>/dev/null; then
-        echo -e "${C_PURPLE}│  ${C_YELLOW}🔑 Por favor, informe a senha de administrador:${C_RESET}"
-        sudo -v
-    fi
-
-    print_step_done "Flake preparado e ambiente pronto."
+    print_step_done "Flake indexado e pronto para compilação."
 
     # ==========================================================================
     # FASE 3: COMPILAÇÃO & ATIVAÇÃO DO SISTEMA NIXOS
     # ==========================================================================
-    print_step "3" "$total_steps" "⚡" "Compilação & Ativação do Sistema NixOS ($action)"
+    print_step_header "3" "$total_steps" "⚡" "Compilação & Ativação do Sistema NixOS ($action)"
 
-    print_substep "🚀" "Iniciando motor de compilação NixOS..."
-    print_substep "❄️" "${C_MUTED}Executando: sudo nixos-rebuild ${action} --flake \"$REPO_DIR\" ${rebuild_args[*]}${C_RESET}"
-    echo ""
-
-    local build_status=0
-    # Executa o nixos-rebuild diretamente com saída em tempo real
-    if sudo nixos-rebuild "$action" --flake "$REPO_DIR" "${rebuild_args[@]}"; then
-        build_status=0
-    else
-        build_status=$?
+    # Limpeza preventiva e resolução de conflitos de unidades transientes do systemd
+    if sudo systemctl is-active --quiet nixos-rebuild-switch-to-configuration.service 2>/dev/null; then
+        print_substep "⏳" "${C_YELLOW}Aguardando ciclo de ativação anterior finalizar...${C_RESET}"
+        while sudo systemctl is-active --quiet nixos-rebuild-switch-to-configuration.service 2>/dev/null; do
+            sleep 1
+        done
     fi
+    sudo systemctl reset-failed nixos-rebuild-switch-to-configuration.service 2>/dev/null || true
 
-    echo ""
-    if [ "$build_status" -ne 0 ]; then
-        print_step_fail "Falha crítica durante a reconstrução do NixOS (Código $build_status)."
+    if ! run_with_dynamic_hud "Motor de Rebuild do NixOS" "Iniciando compilação do sistema..." sudo nixos-rebuild "$action" --flake "$REPO_DIR" "${rebuild_args[@]}"; then
+        print_step_fail "Falha durante a reconstrução do NixOS."
         play_sound "error"
         send_notify "critical" "❌ Erro no Rebuild NixOS" "A compilação do sistema falhou. Verifique os logs no terminal."
 
@@ -307,7 +436,7 @@ main() {
         echo -e "${C_RED}║${C_RESET}  🛡️  A geração anterior (${C_YELLOW}#${old_gen_num}${C_RESET}) permanece 100% segura e ativa.          ${C_RED}║${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica:${C_RESET} Execute '${C_BOLD}rebuild --show-trace${C_RESET}' para inspecionar o erro completo.   ${C_RED}║${C_RESET}"
         echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
-        exit "$build_status"
+        exit 1
     fi
 
     print_step_done "Compilação e ativação concluídas com sucesso!"
@@ -315,7 +444,7 @@ main() {
     # ==========================================================================
     # FASE 4: AUDITORIA DE PACOTES & NOVA GERAÇÃO
     # ==========================================================================
-    print_step "4" "$total_steps" "📊" "Auditoria de Pacotes & Nova Geração"
+    print_step_header "4" "$total_steps" "📊" "Auditoria de Pacotes & Nova Geração"
 
     local new_profile_link
     new_profile_link=$(readlink -f /nix/var/nix/profiles/system 2>/dev/null || echo "")
@@ -323,19 +452,18 @@ main() {
     new_gen_num=$(readlink /nix/var/nix/profiles/system 2>/dev/null | grep -o 'system-[0-9]\+-link' | grep -o '[0-9]\+' || echo "$old_gen_num")
 
     if [ "$old_gen_num" != "$new_gen_num" ]; then
-        print_substep "🏷️" "Transição de Sistema: ${C_YELLOW}Geração #${old_gen_num}${C_RESET} ──▶ ${C_GREEN}${C_BOLD}Geração #${new_gen_num}${C_RESET} ${C_GREEN}(ATIVADA)${C_RESET}"
+        print_substep "🏷️" "Transição: ${C_YELLOW}Geração #${old_gen_num}${C_RESET} ──▶ ${C_GREEN}${C_BOLD}Geração #${new_gen_num}${C_RESET} ${C_GREEN}(NOVA GERAÇÃO ATIVA)${C_RESET}"
     else
-        print_substep "🏷️" "Geração do Sistema: ${C_GREEN}${C_BOLD}Geração #${new_gen_num}${C_RESET} (Inalterada)"
+        print_substep "🏷️" "Geração: ${C_GREEN}${C_BOLD}Geração #${new_gen_num}${C_RESET} (Inalterada)"
     fi
 
-    # Analisa diferenças entre closures do Nix Store
-    local diff_text=""
     local count_added=0
     local count_updated=0
     local count_removed=0
     declare -a diff_highlights=()
 
     if [ -n "$old_profile_link" ] && [ -n "$new_profile_link" ] && [ "$old_profile_link" != "$new_profile_link" ]; then
+        local diff_text
         diff_text=$(nix store diff-closures "$old_profile_link" "$new_profile_link" 2>/dev/null || echo "")
 
         while IFS= read -r line; do
@@ -390,12 +518,11 @@ main() {
     # ==========================================================================
     # FASE 5: SNAPSHOT GIT & SINCRONIZAÇÃO EM NUVEM
     # ==========================================================================
-    print_step "5" "$total_steps" "🚀" "Snapshot Git & Sincronização em Nuvem"
+    print_step_header "5" "$total_steps" "🚀" "Snapshot Git & Sincronização em Nuvem"
 
-    local commit_created=false
     local commit_sha=""
 
-    # Se houver alterações locais após o build, cria o commit
+    # Se houver alterações locais, cria o commit
     if ! git -C "$REPO_DIR" diff --staged --quiet || ! git -C "$REPO_DIR" diff --quiet; then
         git -C "$REPO_DIR" add -A
         if [ -z "$commit_msg" ]; then
@@ -404,20 +531,17 @@ main() {
             commit_msg="rebuild(nixos): Gen #${new_gen_num} • ${ts}"
         fi
 
-        print_substep "💾" "Criando commit: ${C_CYAN}\"$commit_msg\"${C_RESET}..."
         if git -C "$REPO_DIR" commit -m "$commit_msg" >/dev/null 2>&1; then
-            commit_created=true
             commit_sha=$(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null || echo "")
-            print_substep "🏷️" "Commit gerado: [${C_YELLOW}${commit_sha}${C_RESET}]"
+            print_substep "🏷️" "Commit gerado: [${C_YELLOW}${commit_sha}${C_RESET}] \"$commit_msg\""
         fi
     else
         print_substep "ℹ️" "Nenhuma alteração pendente para commit."
         commit_sha=$(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null || echo "")
     fi
 
-    # Envio para o repositório remoto
-    print_substep "📤" "Sincronizando com ${C_PURPLE}origin/$branch${C_RESET} no GitHub..."
-    if git -C "$REPO_DIR" push origin "$branch" >/tmp/git_push_log 2>&1; then
+    # Envio com HUD dinâmico
+    if run_with_dynamic_hud "Publicação no GitHub (origin/$branch)" "Enviando alterações..." git -C "$REPO_DIR" push origin "$branch"; then
         print_substep "☁️" "${C_GREEN}Push realizado com sucesso para o GitHub!${C_RESET}"
     else
         print_substep "⚠️" "${C_YELLOW}Aviso:${C_RESET} O rebuild local foi concluído, mas houve falha no push (sem internet ou sem permissão)."
@@ -425,7 +549,7 @@ main() {
 
     print_step_done "Sincronização remota finalizada."
 
-    # Sincronização opcional da paleta Caelestia/KDE
+    # Sincronização da paleta Caelestia/KDE
     if [ -f "$REPO_DIR/dotfiles/caelestia/sync-kde.sh" ]; then
         bash "$REPO_DIR/dotfiles/caelestia/sync-kde.sh" >/dev/null 2>&1 || true
     fi
@@ -433,9 +557,9 @@ main() {
     # ==========================================================================
     # 🏆 DASHBOARD RESUMO DA GRANDE ATUALIZAÇÃO
     # ==========================================================================
-    local end_time
-    end_time=$(date +%s)
-    local elapsed=$((end_time - start_time))
+    local global_end_time
+    global_end_time=$(date +%s)
+    local elapsed=$((global_end_time - global_start_time))
     local elapsed_min=$((elapsed / 60))
     local elapsed_sec=$((elapsed % 60))
     local time_formatted
