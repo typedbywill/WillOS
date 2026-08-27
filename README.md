@@ -49,8 +49,6 @@ O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hos
 │   └── notegiga/                # Notebook Intel + GPU Intel + LUKS
 ├── modules/                   # Módulos opcionais do sistema
 │   └── gpu.nix                # Gerenciador dinâmico de drivers gráficos (Intel / AMD / Nvidia)
-├── wallpapers/                # Papéis de parede padrão do sistema
-│   └── default.jpg
 └── dotfiles/                  # Arquivos de configuração dos utilitários
     ├── hypr/
     │   ├── hyprland.conf      # Configuração do compositor Hyprland

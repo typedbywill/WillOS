@@ -101,9 +101,6 @@ in
   xdg.configFile."dolphinrc" = { source = ./dotfiles/dolphin/dolphinrc; force = true; };
   xdg.dataFile."kxmlgui5/dolphin/dolphinui.rc" = { source = ./dotfiles/dolphin/dolphinui.rc; force = true; };
 
-  # Sincronização de wallpapers padrão públicos
-  home.file."Pictures/Wallpapers/default.jpg".source = ./wallpapers/default.jpg;
-
   # Sincronização automática do tema Caelestia para o KDE/Dolphin na ativação
   home.activation.syncKde = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     $DRY_RUN_CMD bash ${config.home.homeDirectory}/.config/caelestia/sync-kde.sh || true
