@@ -10,6 +10,7 @@
   boot.loader.efi.canTouchEfiVariables = true;
   boot.supportedFilesystems = [ "ntfs" ];
 
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   networking.hostName = lib.mkDefault "nixos";
   networking.networkmanager.enable = true;
   networking.firewall = {
@@ -246,16 +247,13 @@
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     (pkgs.writeShellScriptBin "rebuild" ''
-      REPO_SCRIPT="$HOME/WillOS/scripts/rebuild.sh"
-      CONFIG_SCRIPT="$HOME/.config/scripts/rebuild.sh"
-      if [ -f "$REPO_SCRIPT" ]; then
-        exec bash "$REPO_SCRIPT" "$@"
-      elif [ -f "$CONFIG_SCRIPT" ]; then
-        exec bash "$CONFIG_SCRIPT" "$@"
-      else
-        echo "❌ Script de rebuild não encontrado em $REPO_SCRIPT nem em $CONFIG_SCRIPT" >&2
-        exit 1
-      fi
+      for p in "$HOME/nixos-hyprland-caelestia/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"; do
+        if [ -f "$p" ]; then
+          exec bash "$p" "$@"
+        fi
+      done
+      echo "❌ Script de rebuild não encontrado em $HOME/nixos-hyprland-caelestia/scripts/rebuild.sh nem em $HOME/WillOS/scripts/rebuild.sh" >&2
+      exit 1
     '')
   ];
 

@@ -49,17 +49,14 @@ end
 
 # Função para reconstruir o sistema e sincronizar com o Git automaticamente (Modo Grande Atualização)
 function rebuild --description "Reconstruir o WillOS com visual dinâmico e estatísticas completas"
-    set -l script_repo "$HOME/WillOS/scripts/rebuild.sh"
-    set -l script_config "$HOME/.config/scripts/rebuild.sh"
-
-    if test -f "$script_repo"
-        bash "$script_repo" $argv
-    else if test -f "$script_config"
-        bash "$script_config" $argv
-    else
-        echo "❌ Script de rebuild não encontrado em $script_repo"
-        return 1
+    for script in "$HOME/nixos-hyprland-caelestia/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"
+        if test -f "$script"
+            bash "$script" $argv
+            return $status
+        end
     end
+    echo "❌ Script de rebuild não encontrado."
+    return 1
 end
 
 # Autocompletes interativos do comando rebuild

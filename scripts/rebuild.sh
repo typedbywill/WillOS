@@ -39,10 +39,14 @@ if [ -z "$REPO_DIR" ]; then
     SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
     if [ -f "$SCRIPT_ROOT/flake.nix" ]; then
         REPO_DIR="$SCRIPT_ROOT"
+    elif [ -d "$HOME/nixos-hyprland-caelestia" ] && [ -f "$HOME/nixos-hyprland-caelestia/flake.nix" ]; then
+        REPO_DIR="$HOME/nixos-hyprland-caelestia"
     elif [ -d "$HOME/WillOS" ] && [ -f "$HOME/WillOS/flake.nix" ]; then
         REPO_DIR="$HOME/WillOS"
+    elif [ -f "$PWD/flake.nix" ]; then
+        REPO_DIR="$PWD"
     else
-        REPO_DIR="/home/william/WillOS"
+        REPO_DIR="/home/william/nixos-hyprland-caelestia"
     fi
 fi
 SUDO_PID=""
