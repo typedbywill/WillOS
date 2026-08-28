@@ -284,7 +284,10 @@ run_with_dynamic_hud() {
         echo -e "${C_RED}║  ❌  RELATÓRIO DE ERRO DETALHADO DO WILLOS REBUILD                          ║${C_RESET}"
         echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}"
 
-        if [ "$total_lines" -le 100 ]; then
+        if [ ! -s "$logfile" ] || [ "$total_lines" -eq 0 ]; then
+            echo -e "${C_YELLOW}⚠️  O processo finalizou com código de erro ${exit_code} sem emitir dados no stdout/stderr.${C_RESET}"
+            echo -e "${C_MUTED}Comando executado:${C_RESET} ${C_CYAN}${cmd[*]}${C_RESET}\n"
+        elif [ "$total_lines" -le 100 ]; then
             cat "$logfile" 2>/dev/null || echo "Nenhum log gravado."
         else
             echo -e "${C_YELLOW}⚠️  Log extenso (${total_lines} linhas). Exibindo as últimas 60 linhas de saída:${C_RESET}\n"

@@ -202,6 +202,7 @@ run_with_dynamic_hud() {
     local title="$1"
     local default_status="$2"
     shift 2
+    local cmd=("$@")
 
     local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
     local spin_colors=("$C_CYAN" "$C_BLUE" "$C_WHITE" "$C_GREEN")
@@ -209,12 +210,8 @@ run_with_dynamic_hud() {
     local logfile
     logfile=$(mktemp /tmp/willos_setup_task.XXXXXX)
 
-    # Executa os argumentos via bash garantindo compatibilidade com funções ou pipelines
-    if [ "$#" -eq 1 ]; then
-        bash -c "$1" > "$logfile" 2>&1 &
-    else
-        "$@" > "$logfile" 2>&1 &
-    fi
+    # Executa o comando em segundo plano capturando saída completa
+    "${cmd[@]}" > "$logfile" 2>&1 &
     local pid=$!
 
     # Esconde o cursor
@@ -325,7 +322,10 @@ run_with_dynamic_hud() {
         echo -e "${C_RED}║  ❌  RELATÓRIO DE ERRO DETALHADO DO WILLOS SETUP                            ║${C_RESET}"
         echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}"
 
-        if [ "$total_lines" -le 100 ]; then
+        if [ ! -s "$logfile" ] || [ "$total_lines" -eq 0 ]; then
+            echo -e "${C_YELLOW}⚠️  O processo finalizou com código de erro ${exit_code} sem emitir dados no stdout/stderr.${C_RESET}"
+            echo -e "${C_MUTED}Comando executado:${C_RESET} ${C_CYAN}${cmd[*]}${C_RESET}\n"
+        elif [ "$total_lines" -le 100 ]; then
             cat "$logfile" 2>/dev/null || echo "Nenhum log gravado."
         else
             echo -e "${C_YELLOW}⚠️  Log extenso (${total_lines} linhas). Exibindo as últimas 60 linhas de saída:${C_RESET}\n"
@@ -1001,14 +1001,12 @@ EOF
     run_git -C "$TARGET_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     # Monta comando de rebuild
-    local rebuild_cmd=""
-    if command -v git >/dev/null 2>&1; then
-        rebuild_cmd="sudo env PATH=\"$PATH\" FLAKE_DIR=\"$TARGET_DIR\" nixos-rebuild $action --impure --flake \"$TARGET_DIR#willos\" $(printf '%q ' "${rebuild_extra_args[@]}")"
-    else
-        rebuild_cmd="nix-shell -p git --run \"sudo env PATH=\\\"\\\$PATH\\\" FLAKE_DIR=\\\"$TARGET_DIR\\\" nixos-rebuild $action --impure --flake \\\"$TARGET_DIR#willos\\\" $(printf '%q ' "${rebuild_extra_args[@]}")\""
+    local rebuild_cmd=(sudo env "PATH=$PATH" "FLAKE_DIR=$TARGET_DIR" nixos-rebuild "$action" --impure --flake "$TARGET_DIR#willos")
+    if [ ${#rebuild_extra_args[@]} -gt 0 ]; then
+        rebuild_cmd+=("${rebuild_extra_args[@]}")
     fi
 
-    if ! run_with_dynamic_hud "Motor de Instalação WillOS" "Iniciando compilação do sistema..." "$rebuild_cmd"; then
+    if ! run_with_dynamic_hud "Motor de Instalação WillOS" "Iniciando compilação do sistema..." "${rebuild_cmd[@]}"; then
         print_step_fail "Falha durante a instalação do WillOS."
         play_sound "error"
         send_notify "critical" "❌ Falha no Setup WillOS" "A instalação do sistema foi interrompida. Verifique os logs no terminal."
