@@ -79,15 +79,12 @@ else
     echo "✔ local-config.nix já existente (mantendo preferências locais)."
 fi
 
-# 4. Notificar Git sobre os arquivos locais (intent-to-add para o Nix Flakes enxergar)
-run_git -C "$TARGET_DIR" add -f -N hardware-configuration.nix 2>/dev/null || true
-if [ -f "$TARGET_DIR/local-config.nix" ]; then
-    run_git -C "$TARGET_DIR" add -f -N local-config.nix 2>/dev/null || true
-fi
+# 4. Assegurar que arquivos locais fiquem fora do Git
+run_git -C "$TARGET_DIR" reset HEAD hardware-configuration.nix local-config.nix 2>/dev/null || true
 
 # 5. Reconstruir e aplicar o sistema NixOS
 echo "🚀 Aplicando configuração universal do WillOS..."
-sudo nixos-rebuild switch --flake "$TARGET_DIR#willos" "$@"
+sudo FLAKE_DIR="$TARGET_DIR" nixos-rebuild switch --impure --flake "$TARGET_DIR#willos" "$@"
 
 echo "========================================="
 echo "✨ WillOS configurado e ativado com sucesso!"

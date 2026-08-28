@@ -25,12 +25,24 @@
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
   let
+    resolveLocalModule = name:
+      let
+        pwdPath = if builtins.getEnv "PWD" != "" then (/. + (builtins.getEnv "PWD") + "/${name}") else null;
+        flakeDirPath = if builtins.getEnv "FLAKE_DIR" != "" then (/. + (builtins.getEnv "FLAKE_DIR") + "/${name}") else null;
+        etcPath = /. + "/etc/nixos/${name}";
+      in
+        if builtins.pathExists (./. + "/${name}") then (./. + "/${name}")
+        else if pwdPath != null && builtins.pathExists pwdPath then pwdPath
+        else if flakeDirPath != null && builtins.pathExists flakeDirPath then flakeDirPath
+        else if builtins.pathExists etcPath then etcPath
+        else {};
+
     mkWillOS = { extraModules ? [] }: nixpkgs.lib.nixosSystem {
       specialArgs = { inherit inputs; };
       modules = [
         ./configuration.nix
-        (if builtins.pathExists ./hardware-configuration.nix then ./hardware-configuration.nix else {})
-        (if builtins.pathExists ./local-config.nix then ./local-config.nix else {})
+        (resolveLocalModule "hardware-configuration.nix")
+        (resolveLocalModule "local-config.nix")
         home-manager.nixosModules.home-manager
         {
           home-manager.useGlobalPkgs = true;

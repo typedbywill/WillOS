@@ -312,12 +312,8 @@ ensure_local_hardware_ready() {
 EOF
     fi
 
-    # Garante que o Git do Flake veja os arquivos locais sem commitar (intent-to-add)
+    # Garante que os arquivos locais permaneçam fora do índice Git
     git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
-    git -C "$REPO_DIR" add -f -N hardware-configuration.nix 2>/dev/null || true
-    if [ -f "$REPO_DIR/local-config.nix" ]; then
-        git -C "$REPO_DIR" add -f -N local-config.nix 2>/dev/null || true
-    fi
 }
 
 # Extrai a lista de partições e sistemas de arquivos do hardware-configuration.nix local
@@ -849,10 +845,9 @@ main() {
     # FASE 2: PREPARAÇÃO DO NIX FLAKE & INTEGRIDADE
     # ==========================================================================
     print_step_header "2" "$total_steps" "📦" "Preparação do Flake & Indexação"
-    # Prepara o índice para o Flake mantendo arquivos locais isolados (apenas intent-to-add)
+    # Indexa alterações do repositório para o Flake mantendo arquivos locais ignorados
     run_with_dynamic_hud "Indexação de Arquivos para o Flake" "Adicionando alterações ao índice Git..." git -C "$REPO_DIR" add -A
     git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
-    git -C "$REPO_DIR" add -f -N hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     if [ "$do_flake_update" = true ]; then
         run_with_dynamic_hud "Atualização de Inputs do Flake" "Executando nix flake update..." nix flake update --flake "$REPO_DIR"
@@ -881,7 +876,7 @@ main() {
     fi
     sudo systemctl reset-failed nixos-rebuild-switch-to-configuration.service 2>/dev/null || true
 
-    if ! run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema ($target_host)..." sudo nixos-rebuild "$action" --flake "$REPO_DIR#$target_host" "${rebuild_args[@]}"; then
+    if ! run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema ($target_host)..." sudo FLAKE_DIR="$REPO_DIR" nixos-rebuild "$action" --impure --flake "$REPO_DIR#$target_host" "${rebuild_args[@]}"; then
         print_step_fail "Falha durante a reconstrução do WillOS."
         play_sound "error"
         send_notify "critical" "❌ Erro no Rebuild WillOS" "A compilação do sistema falhou. Verifique os logs no terminal."
@@ -1002,8 +997,8 @@ main() {
         commit_sha=$(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null || echo "")
     fi
 
-    # Restaura o status intent-to-add para que o Nix Flakes continue enxergando os arquivos locais
-    git -C "$REPO_DIR" add -f -N hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
+    # Garante que os arquivos locais permaneçam fora do Git
+    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     # Envio com HUD dinâmico
     if run_with_dynamic_hud "Publicação no GitHub (origin/$branch)" "Enviando alterações..." git -C "$REPO_DIR" push origin "$branch"; then
