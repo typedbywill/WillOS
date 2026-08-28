@@ -55,7 +55,7 @@
   users.users.william = {
     isNormalUser = true;
     description = "William";
-    extraGroups = [ "networkmanager" "wheel" "i2c" "docker" "uinput" "input" ];
+    extraGroups = [ "networkmanager" "wheel" "i2c" "docker" "uinput" "input" "libvirtd" "kvm" ];
     shell = pkgs.fish;
   };
 
@@ -115,14 +115,27 @@
   };
   hardware.i2c.enable = true;
 
-  # Virtualização e Docker
-  virtualisation.docker = {
-    enable = true;
-    autoPrune = {
+  # Virtualização, KVM/QEMU, Libvirt e Docker
+  virtualisation = {
+    docker = {
       enable = true;
-      dates = "weekly";
+      autoPrune = {
+        enable = true;
+        dates = "weekly";
+      };
     };
+    libvirtd = {
+      enable = true;
+      qemu = {
+        package = pkgs.qemu_kvm;
+        runAsRoot = true;
+        swtpm.enable = true;
+      };
+    };
+    spiceUSBRedirection.enable = true;
   };
+
+  programs.virt-manager.enable = true;
 
   # Desativação completa de suspensão, hibernação e sleep no nível do sistema
   systemd.targets.sleep.enable = false;
@@ -212,6 +225,11 @@
     bibata-cursors
     sddm-astronaut
     cloudflared
+    virt-viewer
+    spice
+    spice-gtk
+    spice-protocol
+    virtio-win
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];

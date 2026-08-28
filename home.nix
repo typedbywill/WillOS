@@ -5,6 +5,10 @@ let
   winbox = pkgs.callPackage ./pkgs/winbox.nix {};
 in
 {
+  imports = [
+    ./modules/spotify-inactivity-watcher.nix
+  ];
+
   home.username = "william";
   home.homeDirectory = "/home/william";
   home.stateVersion = "26.05";
