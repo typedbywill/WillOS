@@ -60,6 +60,7 @@ in
     xdg-user-dirs
     cliphist
     wl-clipboard
+    libsecret
   ];
 
   # Variáveis de sessão do usuário
@@ -194,6 +195,21 @@ EOF
     name = "Bibata-Modern-Classic";
     package = pkgs.bibata-cursors;
     size = 24;
+  };
+
+  # Configuração declarativa do Git com GNOME Keyring / Libsecret
+  programs.git = {
+    enable = true;
+    package = pkgs.gitFull;
+    settings = {
+      user = {
+        name = "typedbywill";
+        email = "william97623074@gmail.com";
+      };
+      credential = {
+        helper = "libsecret";
+      };
+    };
   };
 
   # Permite que o Home Manager gerencie a si mesmo

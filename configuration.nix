@@ -112,6 +112,13 @@
   security.polkit.enable = true;
   services.gvfs.enable = true;
   services.udisks2.enable = true;
+
+  # Habilita o daemon GNOME Keyring e integração PAM para desbloqueio automático no login
+  services.gnome.gnome-keyring.enable = true;
+  programs.seahorse.enable = true;
+  security.pam.services.sddm.enableGnomeKeyring = true;
+  security.pam.services.login.enableGnomeKeyring = true;
+  security.pam.services.hyprlock.enableGnomeKeyring = true;
   services.pipewire = {
     enable = true;
     pulse.enable = true;
@@ -207,8 +214,9 @@
   };
 
   environment.systemPackages = with pkgs; [
-    git
+    gitFull
     gh
+    libsecret
     wget
     curl
     efibootmgr
