@@ -633,8 +633,10 @@ show_preflight_audit() {
 
     local status_output
     status_output=$(git -C "$REPO_DIR" status --short 2>/dev/null || echo "")
-    local changed_count
-    changed_count=$(echo "$status_output" | grep -v "^$" | wc -l || echo "0")
+    local changed_count=0
+    if [ -n "$status_output" ]; then
+        changed_count=$(echo "$status_output" | grep -c -v '^[[:space:]]*$' || echo "0")
+    fi
     printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Arquivos Locais   :${C_RESET} ${C_YELLOW}%-53s${C_RESET} ${C_BORDER}│${C_RESET}\n" "${changed_count} arquivo(s) com alterações pendentes"
 
     local next_gen=$((current_gen + 1))
@@ -853,8 +855,10 @@ main() {
     # Detecta arquivos modificados localmente
     local status_output
     status_output=$(git -C "$REPO_DIR" status --short 2>/dev/null || echo "")
-    local changed_count
-    changed_count=$(echo "$status_output" | grep -v '^$' | wc -l || echo "0")
+    local changed_count=0
+    if [ -n "$status_output" ]; then
+        changed_count=$(echo "$status_output" | grep -c -v '^[[:space:]]*$' || echo "0")
+    fi
 
     if [ "$changed_count" -gt 0 ]; then
         print_substep "📝" "${C_CYAN}${changed_count} arquivos modificados detectados:${C_RESET}"
