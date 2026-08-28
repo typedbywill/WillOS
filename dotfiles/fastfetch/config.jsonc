@@ -60,7 +60,8 @@
     {
       "type": "terminal",
       "key": "󰞷 Terminal",
-      "keyColor": "cyan"
+      "keyColor": "cyan",
+      "format": "{process-name}"
     },
     {
       "type": "cpu",

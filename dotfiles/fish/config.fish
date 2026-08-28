@@ -49,7 +49,7 @@ end
 
 # Função para reconstruir o sistema e sincronizar com o Git automaticamente (Modo Grande Atualização)
 function rebuild --description "Reconstruir o WillOS com visual dinâmico e estatísticas completas"
-    set -l script_repo "$HOME/nixos-hyprland-caelestia/scripts/rebuild.sh"
+    set -l script_repo "$HOME/WillOS/scripts/rebuild.sh"
     set -l script_config "$HOME/.config/scripts/rebuild.sh"
 
     if test -f "$script_repo"

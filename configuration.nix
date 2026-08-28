@@ -246,7 +246,7 @@
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     (pkgs.writeShellScriptBin "rebuild" ''
-      REPO_SCRIPT="$HOME/nixos-hyprland-caelestia/scripts/rebuild.sh"
+      REPO_SCRIPT="$HOME/WillOS/scripts/rebuild.sh"
       CONFIG_SCRIPT="$HOME/.config/scripts/rebuild.sh"
       if [ -f "$REPO_SCRIPT" ]; then
         exec bash "$REPO_SCRIPT" "$@"

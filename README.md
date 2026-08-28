@@ -83,8 +83,8 @@ bash <(curl -sL https://raw.githubusercontent.com/typedbywill/WillOS/main/script
 ### Opção 2: Instalação Manual
 
 ```bash
-git clone https://github.com/typedbywill/WillOS.git ~/nixos-hyprland-caelestia
-cd ~/nixos-hyprland-caelestia
+git clone https://github.com/typedbywill/WillOS.git ~/WillOS
+cd ~/WillOS
 
 # Copiar ou gerar o hardware-configuration da máquina:
 cp /etc/nixos/hardware-configuration.nix ./hardware-configuration.nix
