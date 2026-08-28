@@ -43,8 +43,25 @@ TARGET_DIR="${TARGET_DIR:-$HOME/nixos-hyprland-caelestia}"
 SUDO_PID=""
 
 # ------------------------------------------------------------------------------
-# 🛡️ LIMPEZA E TRAPS (Ctrl+C / EXIT)
+# 🛡️ LIMPEZA E TRAPS (Ctrl+C / EXIT / ERR)
 # ------------------------------------------------------------------------------
+error_handler() {
+    local exit_code=$?
+    local line_no=$1
+    local cmd="$2"
+    if [ "$exit_code" -ne 0 ]; then
+        echo -e "\n${C_BORDER}╭─────────────────────────────────────────────────────────────────────────────╮${C_RESET}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_RED}❌ ERRO INESPERADO NA EXECUÇÃO DO SCRIPT${C_RESET}                                   ${C_BORDER}│${C_RESET}"
+        echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Arquivo :${C_RESET} ${BASH_SOURCE[1]:-$0}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Linha   :${C_RESET} ${line_no}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Comando :${C_RESET} ${C_YELLOW}${cmd}${C_RESET}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Código  :${C_RESET} ${C_RED}${exit_code}${C_RESET}"
+        echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────────────────────╯\n"
+    fi
+}
+trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
+
 cleanup() {
     tput cnorm 2>/dev/null || printf "\033[?25h" 2>/dev/null || true
     if [ -n "$SUDO_PID" ]; then
@@ -296,10 +313,30 @@ run_with_dynamic_hud() {
         rm -f "$logfile"
         return 0
     else
+        local persistent_log="/tmp/willos-setup.log"
+        cp "$logfile" "$persistent_log" 2>/dev/null || true
+
         printf "\r\033[K${C_BORDER}│  ${C_RED}✖${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_RED}falhou após %02dm %02ds (Código: ${exit_code})!${C_RESET}\n\n" "$min_tot" "$sec_tot"
-        echo -e "${C_RED}─────── [ RELATÓRIO DE ERRO WILLOS ] ───────${C_RESET}"
-        tail -n 35 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
-        echo -e "${C_RED}────────────────────────────────────────────${C_RESET}\n"
+
+        local total_lines
+        total_lines=$(wc -l < "$logfile" 2>/dev/null || echo "0")
+
+        echo -e "${C_RED}╔═════════════════════════════════════════════════════════════════════════════╗${C_RESET}"
+        echo -e "${C_RED}║  ❌  RELATÓRIO DE ERRO DETALHADO DO WILLOS SETUP                            ║${C_RESET}"
+        echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}"
+
+        if [ "$total_lines" -le 100 ]; then
+            cat "$logfile" 2>/dev/null || echo "Nenhum log gravado."
+        else
+            echo -e "${C_YELLOW}⚠️  Log extenso (${total_lines} linhas). Exibindo as últimas 60 linhas de saída:${C_RESET}\n"
+            tail -n 60 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
+        fi
+
+        echo -e "\n${C_RED}─────────────────────────────────────────────────────────────────────────────${C_RESET}"
+        echo -e "${C_CYAN}📄 Log completo gravado em:${C_RESET} ${C_BOLD}${C_YELLOW}${persistent_log}${C_RESET}"
+        echo -e "${C_MUTED}🔍 Para ver todo o log:${C_RESET}     ${C_BOLD}cat ${persistent_log}${C_RESET}  ${C_MUTED}ou${C_RESET}  ${C_BOLD}less ${persistent_log}${C_RESET}"
+        echo -e "${C_RED}─────────────────────────────────────────────────────────────────────────────${C_RESET}\n"
+
         rm -f "$logfile"
         return "$exit_code"
     fi
@@ -803,7 +840,10 @@ main() {
     # Validação antecipada de SUDO
     if ! sudo -n true 2>/dev/null; then
         echo -e "${C_BORDER}│  ${C_YELLOW}🔑 Por favor, autentique com sua senha de administrador para iniciar o Setup:${C_RESET}"
-        sudo -v
+        if ! sudo -v; then
+            echo -e "${C_BORDER}│  ${C_RED}✖ Erro: Não foi possível obter privilégios de administrador (sudo).${C_RESET}"
+            exit 1
+        fi
         print_substep "🔐" "${C_GREEN}Privilégios administrativos concedidos com sucesso.${C_RESET}"
     else
         print_substep "🔐" "${C_GREEN}Privilégios administrativos ativos.${C_RESET}"
@@ -841,7 +881,7 @@ main() {
         if run_with_dynamic_hud "Sincronização com origin/main" "Atualizando código-fonte do WillOS..." run_git -C "$TARGET_DIR" pull --ff-only origin main; then
             print_substep "✨" "Repositório sincronizado com as últimas melhorias."
         else
-            print_substep "ℹ️" "Mantendo versão local pré-existente do repositório."
+            print_substep "⚠️" "${C_YELLOW}Aviso: Não foi possível atualizar do upstream. Mantendo versão local pré-existente.${C_RESET}"
         fi
     else
         if run_with_dynamic_hud "Download do Repositório WillOS" "Clonando ${REPO_URL}..." run_git clone "$REPO_URL" "$TARGET_DIR"; then
@@ -868,16 +908,41 @@ main() {
     if [ ! -f "$hw_target" ]; then
         if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
             print_substep "📋" "Importando hardware-configuration.nix de /etc/nixos/..."
-            cp "/etc/nixos/hardware-configuration.nix" "$hw_target"
+            if ! cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null; then
+                sudo cp "/etc/nixos/hardware-configuration.nix" "$hw_target" || {
+                    print_step_fail "Falha ao copiar /etc/nixos/hardware-configuration.nix."
+                    exit 1
+                }
+            fi
             print_substep "✔" "Arquivo de hardware importado com sucesso."
         else
             print_substep "⚙️" "Sintetizando nova configuração de hardware via nixos-generate-config..."
+            local gen_log
+            gen_log=$(mktemp /tmp/willos_gen_hw.XXXXXX)
+            local gen_ok=false
             if command -v nixos-generate-config >/dev/null 2>&1; then
-                nixos-generate-config --show-hardware-config > "$hw_target" 2>/dev/null || sudo nixos-generate-config --show-hardware-config > "$hw_target"
+                if nixos-generate-config --show-hardware-config > "$hw_target" 2>"$gen_log"; then
+                    gen_ok=true
+                elif sudo nixos-generate-config --show-hardware-config > "$hw_target" 2>>"$gen_log"; then
+                    gen_ok=true
+                fi
             else
-                sudo nixos-generate-config --show-hardware-config > "$hw_target"
+                if sudo nixos-generate-config --show-hardware-config > "$hw_target" 2>"$gen_log"; then
+                    gen_ok=true
+                fi
             fi
-            print_substep "✔" "Configuração de hardware gerada com base nos sensores locais."
+            if [ "$gen_ok" = true ] && [ -s "$hw_target" ]; then
+                print_substep "✔" "Configuração de hardware gerada com base nos sensores locais."
+            else
+                print_step_fail "Falha ao gerar hardware-configuration.nix."
+                if [ -s "$gen_log" ]; then
+                    echo -e "${C_RED}Detalhes do erro do nixos-generate-config:${C_RESET}"
+                    cat "$gen_log"
+                fi
+                rm -f "$gen_log"
+                exit 1
+            fi
+            rm -f "$gen_log"
         fi
     else
         print_substep "✔" "hardware-configuration.nix local já configurado e preservado."
@@ -952,7 +1017,9 @@ EOF
         echo -e "${C_RED}║  ❌  FALHA NA INICIALIZAÇÃO DO WILLOS                                       ║${C_RESET}"
         echo -e "${C_RED}╠═════════════════════════════════════════════════════════════════════════════╣${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  ⚠️  Ocorreu um erro durante a compilação ou ativação da configuração.      ${C_RED}║${C_RESET}"
+        echo -e "${C_RED}║${C_RESET}  📄  Log completo gravado em: ${C_BOLD}${C_YELLOW}/tmp/willos-setup.log${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica WillOS:${C_RESET} Execute com '${C_BOLD}--show-trace${C_RESET}' para inspecionar o erro completo.  ${C_RED}║${C_RESET}"
+        echo -e "${C_RED}║${C_RESET}  🔍  Para ver o log: '${C_BOLD}cat /tmp/willos-setup.log${C_RESET}'                              ${C_RED}║${C_RESET}"
         echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
         exit 1
     fi
