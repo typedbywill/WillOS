@@ -313,6 +313,7 @@ EOF
     fi
 
     # Garante que o Git do Flake veja os arquivos locais sem commitar (intent-to-add)
+    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
     git -C "$REPO_DIR" add -f -N hardware-configuration.nix 2>/dev/null || true
     if [ -f "$REPO_DIR/local-config.nix" ]; then
         git -C "$REPO_DIR" add -f -N local-config.nix 2>/dev/null || true
@@ -798,6 +799,9 @@ main() {
     # ==========================================================================
     print_step_header "1" "$total_steps" "🌐" "Sincronização & Auditoria de Repositório Git"
 
+    # Isola arquivos locais antes de sincronizar com a nuvem
+    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
+
     if [ "$skip_pull" = true ]; then
         print_substep "⏩" "${C_YELLOW}Modo rápido:${C_RESET} Sincronização remota ignorada."
     else
@@ -846,8 +850,8 @@ main() {
     # ==========================================================================
     print_step_header "2" "$total_steps" "📦" "Preparação do Flake & Indexação"
     # Prepara o índice para o Flake mantendo arquivos locais isolados (apenas intent-to-add)
-    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
     run_with_dynamic_hud "Indexação de Arquivos para o Flake" "Adicionando alterações ao índice Git..." git -C "$REPO_DIR" add -A
+    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
     git -C "$REPO_DIR" add -f -N hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     if [ "$do_flake_update" = true ]; then
@@ -975,11 +979,11 @@ main() {
 
     local commit_sha=""
 
-    # Remove arquivos locais ignorados do stage antes de commitar
-    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
-
     # Adiciona todas as modificações reais (rastreadas ou novos arquivos não ignorados)
     git -C "$REPO_DIR" add -A
+
+    # Garante que arquivos locais e específicos da máquina nunca sejam incluídos no commit
+    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     # Se houver alterações staged reais para commit
     if ! git -C "$REPO_DIR" diff --staged --quiet; then
