@@ -737,11 +737,17 @@ main() {
                 shift
                 custom_gpu="$1"
                 ;;
-            --gpu=*)
-                custom_gpu="${1#*=}"
+            -u|--upgrade)
+                # Flag de compatibilidade para atualização
+                ;;
+            -v|--verbose|-L|--print-build-logs|--quiet|-k|--keep-going|-K|--keep-failed|--fallback|--repair|--refresh|--offline|--accept-flake-config)
+                rebuild_extra_args+=("$1")
+                ;;
+            -j*|--max-jobs*|--cores*|--option*)
+                rebuild_extra_args+=("$1")
                 ;;
             -*)
-                rebuild_extra_args+=("$1")
+                # Ignora flags desconhecidas com segurança sem repassar ao nixos-rebuild
                 ;;
             *)
                 ;;

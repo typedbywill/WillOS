@@ -702,7 +702,6 @@ main() {
                 ;;
             -u|--upgrade)
                 do_flake_update=true
-                rebuild_args+=("$1")
                 ;;
             --boot)
                 action="boot"
@@ -723,8 +722,14 @@ main() {
             --host=*|--profile=*)
                 custom_host="${1#*=}"
                 ;;
-            -*)
+            --show-trace|-v|--verbose|-L|--print-build-logs|--quiet|-k|--keep-going|-K|--keep-failed|--fallback|--repair|--refresh|--offline|--accept-flake-config)
                 rebuild_args+=("$1")
+                ;;
+            -j*|--max-jobs*|--cores*|--option*)
+                rebuild_args+=("$1")
+                ;;
+            -*)
+                # Ignora flags não reconhecidas pelo nixos-rebuild sem interromper o rebuild
                 ;;
             *)
                 if [ -z "$commit_msg" ]; then
