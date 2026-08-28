@@ -41,6 +41,7 @@ C_BRIGHT_WHITE="\033[97m"
 REPO_URL="https://github.com/typedbywill/WillOS.git"
 TARGET_DIR="${TARGET_DIR:-$HOME/WillOS}"
 SUDO_PID=""
+EMERGENCY_SWAP_FILE=""
 
 # ------------------------------------------------------------------------------
 # 🛡️ LIMPEZA E TRAPS (Ctrl+C / EXIT / ERR)
@@ -66,6 +67,10 @@ cleanup() {
     tput cnorm 2>/dev/null || printf "\033[?25h" 2>/dev/null || true
     if [ -n "$SUDO_PID" ]; then
         kill "$SUDO_PID" 2>/dev/null || true
+    fi
+    if [ -n "$EMERGENCY_SWAP_FILE" ] && [ -f "$EMERGENCY_SWAP_FILE" ]; then
+        sudo swapoff "$EMERGENCY_SWAP_FILE" 2>/dev/null || true
+        sudo rm -f "$EMERGENCY_SWAP_FILE" 2>/dev/null || true
     fi
 }
 trap cleanup EXIT INT TERM
@@ -390,6 +395,70 @@ detect_gpu_type() {
         echo "intel"
     else
         echo "none"
+    fi
+}
+
+detect_ram_total_mb() {
+    if [ -f /proc/meminfo ]; then
+        local mem_kb
+        mem_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo "0")
+        if [ "$mem_kb" -gt 0 ] 2>/dev/null; then
+            echo $(( mem_kb / 1024 ))
+            return 0
+        fi
+    fi
+    echo "16384"
+}
+
+detect_swap_total_mb() {
+    if [ -f /proc/meminfo ]; then
+        local swap_kb
+        swap_kb=$(awk '/SwapTotal:/ {print $2}' /proc/meminfo 2>/dev/null || echo "0")
+        if [ "$swap_kb" -ge 0 ] 2>/dev/null; then
+            echo $(( swap_kb / 1024 ))
+            return 0
+        fi
+    fi
+    echo "0"
+}
+
+ensure_sufficient_memory_and_swap() {
+    local ram_mb
+    ram_mb=$(detect_ram_total_mb)
+    local swap_mb
+    swap_mb=$(detect_swap_total_mb)
+    local total_mem_mb=$((ram_mb + swap_mb))
+
+    local ram_gb=$(( (ram_mb + 512) / 1024 ))
+    local swap_gb=$(( (swap_mb + 512) / 1024 ))
+
+    print_substep "💾" "Memória do Sistema: ${C_CYAN}${ram_gb} GB RAM${C_RESET} | Swap Ativo: ${C_CYAN}${swap_gb} GB${C_RESET}"
+
+    # Se a máquina tiver pouca RAM (< 8GB) e Swap insuficiente (< 2GB), aloca swap de emergência
+    if [ "$ram_mb" -lt 8192 ] && [ "$swap_mb" -lt 2048 ]; then
+        local free_disk_gb
+        free_disk_gb=$(detect_free_disk_gb "/")
+        if [ "$free_disk_gb" -ge 8 ]; then
+            print_substep "⚠️" "${C_YELLOW}Alerta de Memória:${C_RESET} Apenas ${ram_gb}GB RAM e ${swap_gb}GB Swap detectados."
+            print_substep "🛡️" "${C_CYAN}Ativando Swap de emergência de 4GB para proteger contra SIGKILL (OOM Killer)...${C_RESET}"
+
+            local swap_path="/tmp/willos_emergency.swap"
+            if [ ! -f "$swap_path" ]; then
+                if sudo fallocate -l 4G "$swap_path" 2>/dev/null || sudo dd if=/dev/zero of="$swap_path" bs=1M count=4096 status=none 2>/dev/null; then
+                    sudo chmod 600 "$swap_path" 2>/dev/null || true
+                    sudo mkswap "$swap_path" >/dev/null 2>&1 || true
+                    if sudo swapon "$swap_path" 2>/dev/null; then
+                        EMERGENCY_SWAP_FILE="$swap_path"
+                        print_substep "✔" "${C_GREEN}Swap temporário de 4GB ativado com sucesso!${C_RESET}"
+                    fi
+                fi
+            elif ! swapon --show=NAME -no 2>/dev/null | grep -q "$swap_path"; then
+                if sudo swapon "$swap_path" 2>/dev/null; then
+                    EMERGENCY_SWAP_FILE="$swap_path"
+                    print_substep "✔" "${C_GREEN}Swap temporário reativado com sucesso!${C_RESET}"
+                fi
+            fi
+        fi
     fi
 }
 
@@ -809,6 +878,14 @@ main() {
             -v|--verbose|-L|--print-build-logs|--quiet|-k|--keep-going|-K|--keep-failed|--fallback|--repair|--refresh|--offline|--accept-flake-config)
                 rebuild_extra_args+=("$1")
                 ;;
+            -j|--max-jobs|--cores)
+                rebuild_extra_args+=("$1" "$2")
+                shift
+                ;;
+            --option)
+                rebuild_extra_args+=("$1" "$2" "$3")
+                shift 2
+                ;;
             -j*|--max-jobs*|--cores*|--option*)
                 rebuild_extra_args+=("$1")
                 ;;
@@ -891,6 +968,9 @@ main() {
     else
         print_substep "⚡" "Git Engine: ${C_CYAN}Ambiente sob demanda via nix-shell pronto para uso${C_RESET}"
     fi
+
+    # Validação e preparação de memória RAM e Swap para compilação segura
+    ensure_sufficient_memory_and_swap
 
     local free_disk_gb
     free_disk_gb=$(detect_free_disk_gb "/")
@@ -1036,6 +1116,26 @@ EOF
     run_git -C "$TARGET_DIR" add -A >/dev/null 2>&1 || true
     run_git -C "$TARGET_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
+    # Calibração adaptativa de recursos para prevenir Out-Of-Memory (OOM)
+    local has_custom_jobs=false
+    for arg in "${rebuild_extra_args[@]}"; do
+        if [[ "$arg" =~ -j|--max-jobs|--cores ]]; then
+            has_custom_jobs=true
+            break
+        fi
+    done
+
+    if [ "$has_custom_jobs" = false ]; then
+        local ram_mb
+        ram_mb=$(detect_ram_total_mb)
+        if [ "$ram_mb" -le 4096 ]; then
+            rebuild_extra_args+=("--max-jobs" "1" "--cores" "2")
+            print_substep "⚙️" "${C_YELLOW}RAM <= 4GB: Limitando jobs simultâneos (max-jobs: 1) para prevenir estouro de memória.${C_RESET}"
+        elif [ "$ram_mb" -le 8192 ]; then
+            rebuild_extra_args+=("--max-jobs" "2")
+        fi
+    fi
+
     # Monta comando de rebuild
     local rebuild_cmd=(sudo env "PATH=$PATH" "FLAKE_DIR=$TARGET_DIR" nixos-rebuild "$action" --impure --flake "$TARGET_DIR#willos")
     if [ ${#rebuild_extra_args[@]} -gt 0 ]; then
@@ -1047,13 +1147,34 @@ EOF
         play_sound "error"
         send_notify "critical" "❌ Falha no Setup WillOS" "A instalação do sistema foi interrompida. Verifique os logs no terminal."
 
+        local persistent_log="/tmp/willos-setup.log"
+        local is_oom=false
+        if [ -f "$persistent_log" ]; then
+            if grep -qiE "SIGKILL|died with <Signals\.SIGKILL|out of memory|oom-killer|Killed" "$persistent_log" 2>/dev/null; then
+                is_oom=true
+            fi
+        fi
+
         echo -e "${C_RED}╔═════════════════════════════════════════════════════════════════════════════╗${C_RESET}"
         echo -e "${C_RED}║  ❌  FALHA NA INICIALIZAÇÃO DO WILLOS                                       ║${C_RESET}"
         echo -e "${C_RED}╠═════════════════════════════════════════════════════════════════════════════╣${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  ⚠️  Ocorreu um erro durante a compilação ou ativação da configuração.      ${C_RED}║${C_RESET}"
-        echo -e "${C_RED}║${C_RESET}  📄  Log completo gravado em: ${C_BOLD}${C_YELLOW}/tmp/willos-setup.log${C_RESET}"
+        echo -e "${C_RED}║${C_RESET}  📄  Log completo gravado em: ${C_BOLD}${C_YELLOW}${persistent_log}${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica WillOS:${C_RESET} Execute com '${C_BOLD}--show-trace${C_RESET}' para inspecionar o erro completo.  ${C_RED}║${C_RESET}"
-        echo -e "${C_RED}║${C_RESET}  🔍  Para ver o log: '${C_BOLD}cat /tmp/willos-setup.log${C_RESET}'                              ${C_RED}║${C_RESET}"
+        echo -e "${C_RED}║${C_RESET}  🔍  Para ver o log: '${C_BOLD}cat ${persistent_log}${C_RESET}'                              ${C_RED}║${C_RESET}"
+
+        if [ "$is_oom" = true ]; then
+            echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}  🚨  ${C_BOLD}${C_RED}ERRO CRÍTICO: PROCESSO MORTO POR FALTA DE MEMÓRIA (OOM / SIGKILL: 9)${C_RESET}  ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}O Linux finalizou o compilador Nix por esgotamento de memória RAM/Swap.${C_RESET}  ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      💡 ${C_BOLD}Como resolver este problema:${C_RESET}                                          ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      1. ${C_CYAN}Ative swap temporário de 4GB antes de rodar o setup:${C_RESET}                    ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}         ${C_BOLD}sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile${C_RESET}          ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}         ${C_BOLD}sudo mkswap /swapfile && sudo swapon /swapfile${C_RESET}                      ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      2. ${C_CYAN}Se estiver em VM, configure ao menos 8GB de RAM para a máquina.${C_RESET}      ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      3. ${C_CYAN}Execute limitando a 1 job:${C_RESET} ${C_BOLD}./scripts/setup.sh --max-jobs 1${C_RESET}              ${C_RED}║${C_RESET}"
+        fi
+
         local free_gb_fail
         free_gb_fail=$(detect_free_disk_gb "/")
         if [ "$free_gb_fail" -lt 12 ]; then
