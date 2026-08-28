@@ -17,8 +17,8 @@ if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
     exit 0
 fi
 
-# Quantidade de workspaces por monitor (5 workspaces por monitor: 1-5, 6-10, 11-15)
-WS_PER_MONITOR=5
+# Quantidade de workspaces por monitor (10 workspaces por monitor: 1-10, 11-20, 21-30)
+WS_PER_MONITOR=10
 
 if [ "$NUM" -gt "$WS_PER_MONITOR" ]; then
     exit 0
@@ -37,21 +37,27 @@ if [ -z "$monitors_json" ] || [ "$monitors_json" = "[]" ]; then
     exit 0
 fi
 
-# Extrai o nome do monitor focado e calcula o workspace de destino ordenado por posição horizontal X
-read -r FOCUSED_MON TARGET_WS < <(echo "$monitors_json" | jq -r --argjson num "$NUM" --argjson per_mon "$WS_PER_MONITOR" '
-    (sort_by(.x) | to_entries | (map(select(.value.focused == true))[0] // .[0])) as $entry
-    | ($entry.key // 0) as $idx
-    | ($entry.value.name // "DP-1") as $name
-    | "\($name) \((($idx * $per_mon) + $num))"
-')
+# Obtém o monitor focado
+FOCUSED_MON=$(echo "$monitors_json" | jq -r '(.[] | select(.focused == true) | .name) // .[0].name // "DP-1"')
 
-if [ -z "$TARGET_WS" ] || [ "$TARGET_WS" = "null" ]; then
-    TARGET_WS="$NUM"
+# Quantidade de monitores ativos
+NUM_MONITORS=$(echo "$monitors_json" | jq 'length')
+
+# Determina o índice base do monitor correspondente às regras do hyprland.conf
+if [ "$NUM_MONITORS" -le 1 ]; then
+    MON_IDX=0
+else
+    case "$FOCUSED_MON" in
+        DP-1|DP-*)       MON_IDX=0 ;;
+        HDMI-A-1|HDMI-*) MON_IDX=1 ;;
+        eDP-1|eDP-*)     MON_IDX=2 ;;
+        *)
+            MON_IDX=$(echo "$monitors_json" | jq -r --arg name "$FOCUSED_MON" 'sort_by(.x) | map(.name) | index($name) // 0')
+            ;;
+    esac
 fi
 
-if [ -z "$FOCUSED_MON" ] || [ "$FOCUSED_MON" = "null" ]; then
-    FOCUSED_MON=$(echo "$monitors_json" | jq -r '.[0].name // "DP-1"')
-fi
+TARGET_WS=$(( (MON_IDX * WS_PER_MONITOR) + NUM ))
 
 # Garante que o workspace alvo pertença ao monitor focado antes de alternar/mover
 hyprctl dispatch moveworkspacetomonitor "$TARGET_WS" "$FOCUSED_MON" >/dev/null 2>&1
