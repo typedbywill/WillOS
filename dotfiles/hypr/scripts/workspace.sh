@@ -17,7 +17,7 @@ if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
     exit 0
 fi
 
-# Quantidade de workspaces por monitor (padrão 5)
+# Quantidade de workspaces por monitor (9 workspaces por monitor: 1-9, 10-18, 19-27)
 WS_PER_MONITOR=9
 
 # Obtém os monitores ativos
