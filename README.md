@@ -72,7 +72,7 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada como uma **plat
 O instalador clona o repositório, gera o `hardware-configuration.nix` da máquina, auto-detecta a GPU (Nvidia, Intel ou AMD) e ativa o sistema:
 
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/typedbywill/myNix/main/setup.sh)
+bash <(curl -sL https://raw.githubusercontent.com/typedbywill/WillOS/main/scripts/setup.sh)
 ```
 
 > [!NOTE]
@@ -83,7 +83,7 @@ bash <(curl -sL https://raw.githubusercontent.com/typedbywill/myNix/main/setup.s
 ### Opção 2: Instalação Manual
 
 ```bash
-git clone https://github.com/typedbywill/myNix.git ~/nixos-hyprland-caelestia
+git clone https://github.com/typedbywill/WillOS.git ~/nixos-hyprland-caelestia
 cd ~/nixos-hyprland-caelestia
 
 # Copiar ou gerar o hardware-configuration da máquina:
