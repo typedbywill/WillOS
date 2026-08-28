@@ -7,7 +7,7 @@
 set -eo pipefail
 
 # ------------------------------------------------------------------------------
-# 🎨 PALETA DE CORES ANSI TRUECOLOR (24-BIT) & ESTILOS
+# 🎨 PALETA DE CORES ANSI DO TERMINAL (HERDA DO TERMINAL / CAELESTIA)
 # ------------------------------------------------------------------------------
 C_RESET="\033[0m"
 C_BOLD="\033[1m"
@@ -15,19 +15,25 @@ C_DIM="\033[2m"
 C_ITALIC="\033[3m"
 C_UNDERLINE="\033[4m"
 
-# Gradientes Neon (Caelestia / Cyberpunk Vibe)
-C_CYAN="\033[38;2;56;189;248m"          # #38bdf8
-C_BLUE="\033[38;2;96;165;250m"          # #60a5fa
-C_PURPLE="\033[38;2;192;132;252m"       # #c084fc
-C_MAGENTA="\033[38;2;232;121;249m"      # #e879f9
-C_GREEN="\033[38;2;74;222;128m"         # #4ade80
-C_YELLOW="\033[38;2;251;191;36m"        # #fbbf24
-C_ORANGE="\033[38;2;251;146;60m"        # #fb923c
-C_RED="\033[38;2;248;113;113m"          # #f87171
-C_MUTED="\033[38;2;148;163;184m"        # #94a3b8
-C_DARK="\033[38;2;71;85;105m"           # #475569
-C_BORDER="\033[38;2;139;92;246m"        # #8b5cf6
-C_BORDER_ACCENT="\033[38;2;59;130;246m" # #3b82f6
+# Cores ANSI padrão (16 cores que respeitam o tema do Kitty/Caelestia)
+C_BLACK="\033[30m"
+C_RED="\033[31m"
+C_GREEN="\033[32m"
+C_YELLOW="\033[33m"
+C_BLUE="\033[34m"
+C_MAGENTA="\033[35m"
+C_CYAN="\033[36m"
+C_WHITE="\033[37m"
+
+# Variações brilhantes e tons neutros
+C_MUTED="\033[90m"
+C_BORDER="\033[90m"
+C_BRIGHT_RED="\033[91m"
+C_BRIGHT_GREEN="\033[92m"
+C_BRIGHT_YELLOW="\033[93m"
+C_BRIGHT_BLUE="\033[94m"
+C_BRIGHT_CYAN="\033[96m"
+C_BRIGHT_WHITE="\033[97m"
 
 REPO_DIR="${REPO_DIR:-/home/william/nixos-hyprland-caelestia}"
 SUDO_PID=""
@@ -91,16 +97,16 @@ print_header() {
 
     echo -e "${C_BORDER}╭─────────────────────────────────────────────────────────────────────────────╮${C_RESET}"
     echo -e "${C_BORDER}│${C_RESET}              ${C_CYAN}██╗    ██╗██╗██╗     ██╗      ██████╗ ███████╗${C_RESET}                 ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}              ${C_BLUE}██║    ██║██║██║     ██║     ██╔═══██╗██╔════╝${C_RESET}                 ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}              ${C_PURPLE}██║ █╗ ██║██║██║     ██║     ██║   ██║███████╗${C_RESET}                 ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}              ${C_PURPLE}██║███╗██║██║██║     ██║     ██║   ██║╚════██║${C_RESET}                 ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}              ${C_MAGENTA}╚███╔███╔╝██║███████╗███████╗╚██████╔╝███████║${C_RESET}                 ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}               ${C_MAGENTA}╚══╝╚══╝ ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚══════╝${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_CYAN}██║    ██║██║██║     ██║     ██╔═══██╗██╔════╝${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_BLUE}██║ █╗ ██║██║██║     ██║     ██║   ██║███████╗${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_BLUE}██║███╗██║██║██║     ██║     ██║   ██║╚════██║${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}              ${C_CYAN}╚███╔███╔╝██║███████╗███████╗╚██████╔╝███████║${C_RESET}                 ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}               ${C_CYAN}╚══╝╚══╝ ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚══════╝${C_RESET}                 ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}│${C_RESET}                                                                             ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}   ${C_BOLD}${C_YELLOW}⚡  W I L L O S   S Y S T E M   C O R E   U P G R A D E   v 2 . 0  ⚡${C_RESET}    ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}   ${C_BOLD}${C_CYAN}⚡  W I L L O S   S Y S T E M   C O R E   U P G R A D E   v 2 . 0  ⚡${C_RESET}    ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
-    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Sistema:${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_MUTED}🐧 Kernel:${C_RESET} ${C_BLUE}%-15s${C_RESET}  ${C_MUTED}🏷️  Geração Atual:${C_RESET} ${C_YELLOW}#%-4s${C_RESET} ${C_BORDER}│${C_RESET}\n" "WillOS [${host_name}]" "$kernel_ver" "$current_gen"
-    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🌿 Branch:${C_RESET}  ${C_PURPLE}%-14s${C_RESET} ${C_MUTED}📅 Data:${C_RESET}   ${C_MUTED}%-15s${C_RESET}  ${C_MUTED}👤 Operador:${C_RESET}      ${C_GREEN}%-4s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$branch" "$now_str" "$USER"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Sistema:${C_RESET} ${C_BOLD}%-14s${C_RESET} ${C_MUTED}🐧 Kernel:${C_RESET} ${C_CYAN}%-15s${C_RESET}  ${C_MUTED}🏷️  Geração Atual:${C_RESET} ${C_YELLOW}#%-4s${C_RESET} ${C_BORDER}│${C_RESET}\n" "WillOS [${host_name}]" "$kernel_ver" "$current_gen"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🌿 Branch:${C_RESET}  ${C_BLUE}%-14s${C_RESET} ${C_MUTED}📅 Data:${C_RESET}   ${C_MUTED}%-15s${C_RESET}  ${C_MUTED}👤 Operador:${C_RESET}      ${C_GREEN}%-4s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$branch" "$now_str" "$USER"
     echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────────────────────╯${C_RESET}"
     echo ""
 }
@@ -110,23 +116,23 @@ print_step_header() {
     local step_total="$2"
     local icon="$3"
     local title="$4"
-    echo -e "${C_BOLD}${C_PURPLE}╭─[ ${C_CYAN}${step_num}/${step_total}${C_PURPLE} ] ${icon}  ${C_CYAN}${title}${C_RESET}"
+    echo -e "${C_BORDER}╭─[ ${C_BOLD}${C_CYAN}${step_num}/${step_total}${C_RESET}${C_BORDER} ] ${C_RESET}${icon}  ${C_BOLD}${C_CYAN}${title}${C_RESET}"
 }
 
 print_substep() {
     local icon="$1"
     local msg="$2"
-    echo -e "${C_PURPLE}│  ${icon} ${C_RESET}${msg}"
+    echo -e "${C_BORDER}│  ${C_RESET}${icon} ${msg}"
 }
 
 print_step_done() {
     local msg="$1"
-    echo -e "${C_PURPLE}╰── ${C_GREEN}✔ ${msg}${C_RESET}\n"
+    echo -e "${C_BORDER}╰── ${C_GREEN}✔ ${msg}${C_RESET}\n"
 }
 
 print_step_fail() {
     local msg="$1"
-    echo -e "${C_PURPLE}╰── ${C_RED}✖ ${msg}${C_RESET}\n"
+    echo -e "${C_BORDER}╰── ${C_RED}✖ ${msg}${C_RESET}\n"
 }
 
 # ------------------------------------------------------------------------------
@@ -139,7 +145,7 @@ run_with_dynamic_hud() {
     local cmd=("$@")
 
     local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
-    local spin_colors=("$C_CYAN" "$C_BLUE" "$C_PURPLE" "$C_MAGENTA")
+    local spin_colors=("$C_CYAN" "$C_BLUE" "$C_WHITE" "$C_GREEN")
     
     local logfile
     logfile=$(mktemp /tmp/rebuild_task.XXXXXX)
@@ -197,7 +203,7 @@ run_with_dynamic_hud() {
             fi
         fi
 
-        # Barra de pulso neon animada
+        # Barra de pulso animada
         local bar_pos=$((i % 20))
         local bar=""
         for ((b=0; b<20; b++)); do
@@ -211,9 +217,9 @@ run_with_dynamic_hud() {
         done
 
         if [ "$is_interactive" = true ]; then
-            printf "\r\033[K${C_PURPLE}│  ${color}${frame}${C_RESET} ${C_BOLD}${C_CYAN}%-38s${C_RESET} ${C_MUTED}⏱️  %02dm %02ds${C_RESET}\n" "$title" "$min" "$sec"
-            printf "\r\033[K${C_PURPLE}│  ${C_PURPLE}├─ [${C_GREEN}%s${C_PURPLE}] ${C_YELLOW}EM ANDAMENTO${C_RESET}\n" "$bar"
-            printf "\r\033[K${C_PURPLE}│  ${C_PURPLE}└─ ${C_MUTED}Status:${C_RESET} ${C_MUTED}%-55s${C_RESET}\033[2A" "$status_line"
+            printf "\r\033[K${C_BORDER}│  ${color}${frame}${C_RESET} ${C_BOLD}${C_CYAN}%-38s${C_RESET} ${C_MUTED}⏱️  %02dm %02ds${C_RESET}\n" "$title" "$min" "$sec"
+            printf "\r\033[K${C_BORDER}│  ${C_BORDER}├─ [${C_CYAN}%s${C_BORDER}] ${C_YELLOW}EM ANDAMENTO${C_RESET}\n" "$bar"
+            printf "\r\033[K${C_BORDER}│  ${C_BORDER}└─ ${C_MUTED}Status:${C_RESET} ${C_MUTED}%-55s${C_RESET}\033[2A" "$status_line"
         fi
 
         ((i++))
@@ -239,11 +245,11 @@ run_with_dynamic_hud() {
     fi
 
     if [ "$exit_code" -eq 0 ]; then
-        printf "\r\033[K${C_PURPLE}│  ${C_GREEN}✔${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_GREEN}concluído em %02dm %02ds!${C_RESET}\n" "$min_tot" "$sec_tot"
+        printf "\r\033[K${C_BORDER}│  ${C_GREEN}✔${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_GREEN}concluído em %02dm %02ds!${C_RESET}\n" "$min_tot" "$sec_tot"
         rm -f "$logfile"
         return 0
     else
-        printf "\r\033[K${C_PURPLE}│  ${C_RED}✖${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_RED}falhou após %02dm %02ds (Código: ${exit_code})!${C_RESET}\n\n" "$min_tot" "$sec_tot"
+        printf "\r\033[K${C_BORDER}│  ${C_RED}✖${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_RED}falhou após %02dm %02ds (Código: ${exit_code})!${C_RESET}\n\n" "$min_tot" "$sec_tot"
         echo -e "${C_RED}─────── [ LOG DE ERRO DETALHADO ] ───────${C_RESET}"
         tail -n 25 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
         echo -e "${C_RED}─────────────────────────────────────────${C_RESET}\n"
@@ -252,20 +258,465 @@ run_with_dynamic_hud() {
     fi
 }
 
+# ------------------------------------------------------------------------------
+# 🔍 DETECÇÃO INTELIGENTE DE PERFIL E PARSER DE HARDWARE
+# ------------------------------------------------------------------------------
+
+# Lista todos os perfis disponíveis em hosts/
+get_available_hosts() {
+    local hosts=()
+    if [ -d "$REPO_DIR/hosts" ]; then
+        for h_dir in "$REPO_DIR/hosts"/*; do
+            if [ -d "$h_dir" ]; then
+                hosts+=("$(basename "$h_dir")")
+            fi
+        done
+    fi
+    echo "${hosts[@]}"
+}
+
+# Detecção pontuada baseada em UUIDs reais, CPU e GPU
+detect_host_profile() {
+    local detected_host=""
+    local best_score=0
+    local available_hosts=()
+    read -r -a available_hosts <<< "$(get_available_hosts)"
+
+    local current_hn
+    current_hn=$(hostname 2>/dev/null || echo "")
+    if [ -n "$current_hn" ] && [ "$current_hn" != "nixos" ] && [ -d "$REPO_DIR/hosts/$current_hn" ]; then
+        echo "$current_hn"
+        return 0
+    fi
+
+    local system_uuids=()
+    if [ -d "/dev/disk/by-uuid" ]; then
+        while IFS= read -r u; do
+            [ -n "$u" ] && system_uuids+=("$u")
+        done < <(ls -1 /dev/disk/by-uuid/ 2>/dev/null || true)
+    fi
+    while IFS= read -r u; do
+        [ -n "$u" ] && system_uuids+=("$u")
+    done < <(lsblk -rno UUID 2>/dev/null || true)
+
+    for h in "${available_hosts[@]}"; do
+        local score=0
+        local hw_file="$REPO_DIR/hosts/$h/hardware-configuration.nix"
+        local def_file="$REPO_DIR/hosts/$h/default.nix"
+        [ ! -f "$hw_file" ] && continue
+
+        # Pontuação de UUIDs de discos mapeados
+        for u in "${system_uuids[@]}"; do
+            if grep -Fq "$u" "$hw_file" 2>/dev/null; then
+                ((score += 15))
+            fi
+        done
+
+        # Pontuação por fabricante de CPU
+        if grep -Eq "hardware\.cpu\.intel|kvm-intel" "$hw_file" 2>/dev/null && grep -iq "intel" /proc/cpuinfo 2>/dev/null; then
+            ((score += 3))
+        elif grep -Eq "hardware\.cpu\.amd|kvm-amd" "$hw_file" 2>/dev/null && grep -iq "amd" /proc/cpuinfo 2>/dev/null; then
+            ((score += 3))
+        fi
+
+        # Pontuação por GPU instalada
+        local host_gpu
+        host_gpu=$(grep -E "myHardware\.gpu\.type" "$def_file" "$hw_file" 2>/dev/null | sed -E "s/.*\"([^\"]+)\".*/\1/" | head -n1 || echo "")
+        if [ "$host_gpu" = "nvidia" ] && lspci 2>/dev/null | grep -iq "nvidia"; then
+            ((score += 5))
+        elif [ "$host_gpu" = "intel" ] && lspci 2>/dev/null | grep -iE "vga|display|3d" | grep -iq "intel"; then
+            ((score += 5))
+        elif [ "$host_gpu" = "amd" ] && lspci 2>/dev/null | grep -iE "vga|display|3d" | grep -iq "amd\|radeon"; then
+            ((score += 5))
+        fi
+
+        if [ "$score" -gt "$best_score" ]; then
+            best_score=$score
+            detected_host="$h"
+        fi
+    done
+
+    # Fallback seguro
+    if [ -z "$detected_host" ]; then
+        if [ -d "$REPO_DIR/hosts/casa" ]; then
+            detected_host="casa"
+        elif [ ${#available_hosts[@]} -gt 0 ]; then
+            detected_host="${available_hosts[0]}"
+        else
+            detected_host="casa"
+        fi
+    fi
+
+    echo "$detected_host"
+}
+
+# Extrai a lista de partições e sistemas de arquivos do hardware-configuration.nix
+parse_host_disks() {
+    local host="$1"
+    local hw_file="$REPO_DIR/hosts/$host/hardware-configuration.nix"
+    [ ! -f "$hw_file" ] && return 0
+
+    awk '
+    /fileSystems\./ {
+        in_fs = 1;
+        mount = "";
+        if (match($0, /fileSystems\."([^"]+)"/, m)) mount = m[1];
+        dev = "";
+        fstype = "";
+    }
+    in_fs {
+        if (match($0, /device[ \t]*=[ \t]*"([^"]+)"/, d)) dev = d[1];
+        if (match($0, /fsType[ \t]*=[ \t]*"([^"]+)"/, t)) fstype = t[1];
+        if ($0 ~ /};/) {
+            if (mount != "") print "FS|" mount "|" (dev ? dev : "desconhecido") "|" (fstype ? fstype : "auto");
+            in_fs = 0;
+        }
+    }
+    /boot\.initrd\.luks\.devices\./ {
+        if (match($0, /boot\.initrd\.luks\.devices\."([^"]+)"\.device[ \t]*=[ \t]*"([^"]+)"/, l)) {
+            print "LUKS|" l[1] "|" l[2] "|crypto_LUKS";
+        }
+    }
+    /swapDevices/ {
+        in_swap = 1;
+        swap_dev = "";
+    }
+    in_swap {
+        if (match($0, /device[ \t]*=[ \t]*"([^"]+)"/, s)) swap_dev = s[1];
+        if ($0 ~ /\];/) {
+            if (swap_dev != "") print "SWAP|swap|" swap_dev "|swap";
+            in_swap = 0;
+        }
+    }
+    ' "$hw_file"
+}
+
+# Valida se um disco / UUID configurado existe ou está ativo no hardware atual
+check_single_disk_status() {
+    local kind="$1"
+    local mount="$2"
+    local dev="$3"
+    local fstype="$4"
+
+    if [ "$kind" = "FS" ]; then
+        if [[ "$dev" == *"/by-uuid/"* ]]; then
+            local uuid="${dev##*/}"
+            if [ -e "/dev/disk/by-uuid/$uuid" ] || lsblk -no UUID 2>/dev/null | grep -wq "$uuid"; then
+                local mnt_uuid
+                mnt_uuid=$(findmnt -no UUID "$mount" 2>/dev/null || echo "")
+                local mnt_src
+                mnt_src=$(findmnt -no SOURCE "$mount" 2>/dev/null || echo "")
+                if [ "$mnt_uuid" = "$uuid" ] || [ "$mnt_src" = "/dev/disk/by-uuid/$uuid" ]; then
+                    echo "MOUNTED"
+                else
+                    echo "PRESENT"
+                fi
+                return 0
+            else
+                echo "MISSING"
+                return 0
+            fi
+        elif [[ "$dev" =~ /dev/mapper/luks-(.+) ]]; then
+            local luks_uuid="${BASH_REMATCH[1]}"
+            if [ -e "$dev" ]; then
+                local mnt_src
+                mnt_src=$(findmnt -no SOURCE "$mount" 2>/dev/null || echo "")
+                if [ "$mnt_src" = "$dev" ] || [[ "$mnt_src" == *"$dev"* ]]; then
+                    echo "MOUNTED"
+                else
+                    echo "PRESENT"
+                fi
+                return 0
+            elif [ -e "/dev/disk/by-uuid/$luks_uuid" ] || lsblk -no UUID 2>/dev/null | grep -wq "$luks_uuid"; then
+                echo "PRESENT"
+                return 0
+            else
+                echo "MISSING"
+                return 0
+            fi
+        else
+            if [ -e "$dev" ]; then
+                if findmnt -M "$mount" -S "$dev" >/dev/null 2>&1; then
+                    echo "MOUNTED"
+                else
+                    echo "PRESENT"
+                fi
+                return 0
+            else
+                echo "MISSING"
+                return 0
+            fi
+        fi
+    elif [ "$kind" = "SWAP" ]; then
+        if [[ "$dev" == *"/by-uuid/"* ]]; then
+            local uuid="${dev##*/}"
+            if swapon --show=NAME -no 2>/dev/null | grep -wq "$uuid"; then
+                echo "MOUNTED"
+                return 0
+            elif [ -e "/dev/disk/by-uuid/$uuid" ] || lsblk -no UUID 2>/dev/null | grep -wq "$uuid"; then
+                echo "PRESENT"
+                return 0
+            else
+                echo "MISSING"
+                return 0
+            fi
+        elif [[ "$dev" =~ /dev/mapper/luks-(.+) ]]; then
+            local luks_uuid="${BASH_REMATCH[1]}"
+            if swapon --show=NAME -no 2>/dev/null | grep -q "$dev"; then
+                echo "MOUNTED"
+                return 0
+            elif [ -e "$dev" ] || [ -e "/dev/disk/by-uuid/$luks_uuid" ] || lsblk -no UUID 2>/dev/null | grep -wq "$luks_uuid"; then
+                echo "PRESENT"
+                return 0
+            else
+                echo "MISSING"
+                return 0
+            fi
+        else
+            if swapon --show=NAME -no 2>/dev/null | grep -wq "$dev"; then
+                echo "MOUNTED"
+                return 0
+            elif [ -e "$dev" ]; then
+                echo "PRESENT"
+                return 0
+            else
+                echo "MISSING"
+                return 0
+            fi
+        fi
+    elif [ "$kind" = "LUKS" ]; then
+        if [[ "$dev" == *"/by-uuid/"* ]]; then
+            local uuid="${dev##*/}"
+            if [ -e "/dev/mapper/$mount" ]; then
+                echo "MOUNTED"
+                return 0
+            elif [ -e "/dev/disk/by-uuid/$uuid" ] || lsblk -no UUID 2>/dev/null | grep -wq "$uuid"; then
+                echo "PRESENT"
+                return 0
+            else
+                echo "MISSING"
+                return 0
+            fi
+        fi
+    fi
+    echo "MISSING"
+}
+
+# ------------------------------------------------------------------------------
+# 📊 PAINEL DE AUDITORIA & CONFIRMAÇÃO PRÉ-REBUILD
+# ------------------------------------------------------------------------------
+show_preflight_audit() {
+    local host="$1"
+    local action="$2"
+    local do_flake_update="$3"
+    local skip_pull="$4"
+
+    local current_hn
+    current_hn=$(hostname 2>/dev/null || echo "nixos")
+    local current_gen
+    current_gen=$(readlink /nix/var/nix/profiles/system 2>/dev/null | grep -o 'system-[0-9]\+-link' | grep -o '[0-9]\+' || echo "1")
+    local branch
+    branch=$(git -C "$REPO_DIR" branch --show-current 2>/dev/null || echo "main")
+
+    local hw_file="$REPO_DIR/hosts/$host/hardware-configuration.nix"
+    local def_file="$REPO_DIR/hosts/$host/default.nix"
+
+    local host_gpu
+    host_gpu=$(grep -E "myHardware\.gpu\.type" "$def_file" "$hw_file" 2>/dev/null | sed -E "s/.*\"([^\"]+)\".*/\1/" | head -n1 || echo "auto")
+
+    local host_cpu="Genérico"
+    if grep -Eq "hardware\.cpu\.intel|kvm-intel" "$hw_file" 2>/dev/null; then
+        host_cpu="Intel (kvm-intel)"
+    elif grep -Eq "hardware\.cpu\.amd|kvm-amd" "$hw_file" 2>/dev/null; then
+        host_cpu="AMD (kvm-amd)"
+    fi
+
+    local target_hn
+    target_hn=$(grep -E "networking\.hostName" "$def_file" 2>/dev/null | sed -E "s/.*\"([^\"]+)\".*/\1/" | head -n1 || echo "$host")
+
+    # Coleta lista de discos configurados
+    local disks_raw
+    disks_raw=$(parse_host_disks "$host")
+
+    local total_disks=0
+    local matched_disks=0
+    local missing_disks=0
+
+    echo -e "${C_BORDER}╭─────────────────────────────────────────────────────────────────────────────╮${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_YELLOW}🔍 AUDITORIA DE CONFIGURAÇÃO & CONFIRMAÇÃO PRÉVIA${C_RESET}                          ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🎯 Perfil Selecionado :${C_RESET} ${C_BOLD}${C_GREEN}%-20s${C_RESET} ${C_MUTED}🏷️ Hostname Destino:${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$host" "$target_hn"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Hostname Atual     :${C_RESET} ${C_YELLOW}%-20s${C_RESET} ${C_MUTED}🌿 Branch Git      :${C_RESET} ${C_BLUE}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$current_hn" "$branch"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🧠 CPU do Perfil      :${C_RESET} ${C_CYAN}%-20s${C_RESET} ${C_MUTED}🎮 Driver GPU      :${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$host_cpu" "$host_gpu"
+    echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_CYAN}💽 DISCOS & PARTIÇÕES MAPEADAS NO PERFIL [${host}]:${C_RESET}                        ${C_BORDER}│${C_RESET}"
+
+    if [ -z "$disks_raw" ]; then
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Nenhuma partição explícita encontrada em hardware-configuration.nix${C_RESET}       ${C_BORDER}│${C_RESET}"
+    else
+        while IFS='|' read -r kind mount dev fstype; do
+            [ -z "$kind" ] && continue
+            ((total_disks++)) || true
+            local status
+            status=$(check_single_disk_status "$kind" "$mount" "$dev" "$fstype")
+
+            local status_badge=""
+            if [ "$status" = "MOUNTED" ]; then
+                status_badge="${C_GREEN}✔ Montado e Ativo${C_RESET}"
+                ((matched_disks++)) || true
+            elif [ "$status" = "PRESENT" ]; then
+                status_badge="${C_CYAN}✔ Presente no HW${C_RESET} "
+                ((matched_disks++)) || true
+            else
+                status_badge="${C_RED}✖ NÃO ENCONTRADO${C_RESET} "
+                ((missing_disks++)) || true
+            fi
+
+            local label="$mount"
+            if [ "$kind" = "LUKS" ]; then
+                label="LUKS ($mount)"
+                if [ ${#label} -gt 16 ]; then
+                    label="${label:0:13}..."
+                fi
+            fi
+
+            local dev_short="$dev"
+            if [ ${#dev_short} -gt 30 ]; then
+                dev_short="...${dev_short: -27}"
+            fi
+
+            printf "${C_BORDER}│${C_RESET}   ${C_CYAN}%-4s${C_RESET} ${C_BOLD}%-16s${C_RESET} ${C_MUTED}%-30s${C_RESET} %-23b ${C_BORDER}│${C_RESET}\n" "$kind" "$label" "$dev_short" "$status_badge"
+        done <<< "$disks_raw"
+    fi
+
+    echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_CYAN}⚡ AÇÕES E ATUALIZAÇÕES QUE SERÃO EXECUTADAS:${C_RESET}                              ${C_BORDER}│${C_RESET}"
+    
+    local op_action="Ativar imediatamente (switch)"
+    if [ "$action" = "boot" ]; then op_action="Apenas no bootloader (boot)"; fi
+    if [ "$action" = "test" ]; then op_action="Teste temporário (test)"; fi
+    printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Modo de Execução  :${C_RESET} ${C_BOLD}${C_YELLOW}%-53s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$op_action"
+
+    local flake_str="${C_MUTED}Não (Preserva versões fixadas no flake.lock)${C_RESET}"
+    if [ "$do_flake_update" = true ]; then
+        flake_str="${C_GREEN}${C_BOLD}SIM (Atualizará todos os pacotes upstream via nix flake update)${C_RESET}"
+    fi
+    printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Upgrade de Flake  :${C_RESET} %-62b ${C_BORDER}│${C_RESET}\n" "$flake_str"
+
+    local git_str="${C_CYAN}Pull (rebase) origin/$branch + Push pós-rebuild${C_RESET}"
+    if [ "$skip_pull" = true ]; then
+        git_str="${C_YELLOW}Modo Rápido / Offline (Sincronização remota ignorada)${C_RESET}"
+    fi
+    printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Sincronização Git :${C_RESET} %-62b ${C_BORDER}│${C_RESET}\n" "$git_str"
+
+    local status_output
+    status_output=$(git -C "$REPO_DIR" status --short 2>/dev/null || echo "")
+    local changed_count
+    changed_count=$(echo "$status_output" | grep -v "^$" | wc -l || echo "0")
+    printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Arquivos Locais   :${C_RESET} ${C_YELLOW}%-53s${C_RESET} ${C_BORDER}│${C_RESET}\n" "${changed_count} arquivo(s) com alterações pendentes"
+
+    local next_gen=$((current_gen + 1))
+    printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Geração NixOS     :${C_RESET} ${C_YELLOW}#${current_gen}${C_RESET} ──▶ ${C_GREEN}#${next_gen} (Nova geração do sistema)${C_RESET}             ${C_BORDER}│${C_RESET}\n"
+
+    echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────────────────────╯${C_RESET}"
+
+    if [ "$missing_disks" -gt 0 ]; then
+        echo -e "${C_RED}${C_BOLD}⚠️  ALERTA DE SEGURANÇA:${C_RESET} ${C_YELLOW}${missing_disks} disco(s)/partição(ões) do perfil '${host}' NÃO foram encontrados nesta máquina!${C_RESET}"
+        echo -e "${C_MUTED}    Certifique-se de que você está aplicando a configuração no computador correto.${C_RESET}\n"
+    else
+        echo -e "${C_GREEN}${C_BOLD}✔  COMPATIBILIDADE CONFIRMADA:${C_RESET} ${C_MUTED}Todos os ${matched_disks} discos/mappers deste perfil correspondem a este hardware.${C_RESET}\n"
+    fi
+}
+
+# Diálogo interativo de confirmação e troca de host
+interactive_preflight_confirm() {
+    while true; do
+        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
+
+        local prompt_msg="${C_BOLD}${C_CYAN}Deseja prosseguir com o rebuild do perfil [${C_GREEN}${target_host}${C_CYAN}]?${C_RESET} [${C_GREEN}S${C_RESET}/n/t (trocar perfil)]: "
+        echo -ne "$prompt_msg"
+        local user_input=""
+        read -r user_input || true
+        user_input=$(echo "$user_input" | tr '[:upper:]' '[:lower:]' | xargs)
+
+        if [ -z "$user_input" ] || [ "$user_input" = "s" ] || [ "$user_input" = "sim" ] || [ "$user_input" = "y" ] || [ "$user_input" = "yes" ]; then
+            echo ""
+            return 0
+        elif [ "$user_input" = "t" ] || [ "$user_input" = "trocar" ] || [ "$user_input" = "perfil" ]; then
+            echo ""
+            echo -e "${C_BORDER}╭─[ ${C_CYAN}🎯${C_BORDER} ] ${C_BOLD}${C_CYAN}Selecione o perfil de máquina desejado:${C_RESET}"
+            local hosts_list=()
+            read -r -a hosts_list <<< "$(get_available_hosts)"
+            local idx=1
+            for h in "${hosts_list[@]}"; do
+                if [ "$h" = "$target_host" ]; then
+                    echo -e "${C_BORDER}│  ${C_GREEN}[${idx}] ${h} (Atual Selecionado)${C_RESET}"
+                else
+                    echo -e "${C_BORDER}│  ${C_MUTED}[${idx}] ${h}${C_RESET}"
+                fi
+                ((idx++)) || true
+            done
+            echo -e "${C_BORDER}│  ${C_RED}[0] Cancelar operação${C_RESET}"
+            echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────${C_RESET}"
+            echo -ne "${C_BOLD}${C_YELLOW}Digite o número ou nome do perfil: ${C_RESET}"
+            local choice=""
+            read -r choice || true
+            choice=$(echo "$choice" | xargs)
+
+            if [ "$choice" = "0" ] || [ "$choice" = "cancelar" ]; then
+                echo -e "\n${C_RED}✖ Rebuild cancelado pelo operador.${C_RESET}\n"
+                exit 0
+            elif [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#hosts_list[@]}" ]; then
+                target_host="${hosts_list[$((choice - 1))]}"
+                print_header
+            elif [ -d "$REPO_DIR/hosts/$choice" ]; then
+                target_host="$choice"
+                print_header
+            else
+                echo -e "${C_RED}Opção inválida.${C_RESET}\n"
+                sleep 1
+                print_header
+            fi
+        elif [ "$user_input" = "n" ] || [ "$user_input" = "nao" ] || [ "$user_input" = "não" ] || [ "$user_input" = "no" ] || [ "$user_input" = "cancel" ]; then
+            echo -e "\n${C_RED}✖ Rebuild cancelado pelo operador. Nenhuma modificação foi aplicada.${C_RESET}\n"
+            exit 0
+        else
+            echo -e "\n${C_RED}Opção não reconhecida. Responda 's' para confirmar, 'n' para cancelar ou 't' para trocar perfil.${C_RESET}\n"
+            sleep 1.5
+            print_header
+        fi
+    done
+}
+
+# ------------------------------------------------------------------------------
+# 📖 CENTRAL DE AJUDA
+# ------------------------------------------------------------------------------
 print_help() {
     print_header
     echo -e "${C_BOLD}${C_CYAN}USO:${C_RESET} rebuild [OPÇÕES] [MENSAGEM_DE_COMMIT]"
     echo ""
-    echo -e "${C_BOLD}${C_YELLOW}OPÇÕES:${C_RESET}"
-    echo -e "  ${C_GREEN}--upgrade, -u${C_RESET}      Atualiza todos os inputs do Flake (nix flake update) antes do rebuild"
-    echo -e "  ${C_GREEN}--boot${C_RESET}             Apenas adiciona a nova geração ao bootloader sem ativar imediatamente"
-    echo -e "  ${C_GREEN}--show-trace${C_RESET}       Exibe o trace completo em caso de erros de compilação Nix"
-    echo -e "  ${C_GREEN}--fast, --no-pull${C_RESET}  Pula a sincronização remota do Git (modo offline/rápido)"
-    echo -e "  ${C_GREEN}--help, -h${C_RESET}         Exibe esta central de ajuda"
+    echo -e "${C_BOLD}${C_YELLOW}OPÇÕES DE CONTROLE & SEGURANÇA:${C_RESET}"
+    echo -e "  ${C_GREEN}-H, --host <nome>${C_RESET}      Especifica manualmente o perfil do host (ex: casa, notegiga)"
+    echo -e "  ${C_GREEN}-y, --yes${C_RESET}              Pula a confirmação interativa de segurança pré-rebuild"
+    echo -e "  ${C_GREEN}--dry-run, --info${C_RESET}      Apenas audita perfis, discos e atualizações sem aplicar nada"
+    echo ""
+    echo -e "${C_BOLD}${C_YELLOW}OPÇÕES DE COMPILAÇÃO & ATUALIZAÇÃO:${C_RESET}"
+    echo -e "  ${C_GREEN}-u, --upgrade${C_RESET}          Atualiza todos os inputs do Flake (nix flake update) antes do rebuild"
+    echo -e "  ${C_GREEN}--boot${C_RESET}                 Apenas adiciona a nova geração ao bootloader sem ativar imediatamente"
+    echo -e "  ${C_GREEN}--test${C_RESET}                 Testa a configuração temporariamente sem torná-la padrão"
+    echo -e "  ${C_GREEN}--show-trace${C_RESET}           Exibe o trace completo em caso de erros de compilação Nix"
+    echo -e "  ${C_GREEN}--fast, --no-pull${C_RESET}      Pula a sincronização remota do Git (modo offline/rápido)"
+    echo -e "  ${C_GREEN}-h, --help${C_RESET}             Exibe esta central de ajuda"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}EXEMPLOS:${C_RESET}"
-    echo -e "  ${C_MUTED}# Rebuild padrão com animação e commit inteligente:${C_RESET}"
+    echo -e "  ${C_MUTED}# Rebuild padrão interativo com auditoria de discos:${C_RESET}"
     echo -e "  ${C_CYAN}rebuild${C_RESET}"
+    echo ""
+    echo -e "${C_MUTED}# Apenas inspecionar compatibilidade de hardware e discos sem rebuild:${C_RESET}"
+    echo -e "  ${C_CYAN}rebuild --info${C_RESET}"
+    echo ""
+    echo -e "${C_MUTED}# Rebuild forçando o perfil 'casa':${C_RESET}"
+    echo -e "  ${C_CYAN}rebuild --host casa${C_RESET}"
     echo ""
     echo -e "${C_MUTED}# Rebuild com mensagem personalizada:${C_RESET}"
     echo -e "  ${C_CYAN}rebuild \"adicionando novos scripts e temas\"${C_RESET}"
@@ -284,12 +735,15 @@ main() {
     local skip_pull=false
     local do_flake_update=false
     local action="switch"
+    local auto_confirm=false
+    local dry_run=false
+    local custom_host=""
     local rebuild_args=()
     local commit_msg=""
 
     # Parsing de argumentos
-    for arg in "$@"; do
-        case "$arg" in
+    while [ $# -gt 0 ]; do
+        case "$1" in
             -h|--help)
                 print_help
                 ;;
@@ -298,7 +752,7 @@ main() {
                 ;;
             -u|--upgrade)
                 do_flake_update=true
-                rebuild_args+=("$arg")
+                rebuild_args+=("$1")
                 ;;
             --boot)
                 action="boot"
@@ -306,21 +760,58 @@ main() {
             --test)
                 action="test"
                 ;;
+            -y|--yes|--no-confirm)
+                auto_confirm=true
+                ;;
+            --dry-run|--info)
+                dry_run=true
+                ;;
+            -H|--host|--profile)
+                shift
+                custom_host="$1"
+                ;;
+            --host=*|--profile=*)
+                custom_host="${1#*=}"
+                ;;
             -*)
-                rebuild_args+=("$arg")
+                rebuild_args+=("$1")
                 ;;
             *)
                 if [ -z "$commit_msg" ]; then
-                    commit_msg="$arg"
+                    commit_msg="$1"
                 else
-                    commit_msg="$commit_msg $arg"
+                    commit_msg="$commit_msg $1"
                 fi
                 ;;
         esac
+        shift
     done
 
     # Exibe o cabeçalho dinâmico
     print_header
+
+    # Identificação inteligente ou personalizada do perfil de Host
+    local target_host="$custom_host"
+    if [ -z "$target_host" ]; then
+        target_host=$(detect_host_profile)
+    fi
+
+    # Se modo dry-run / info solicitado, apenas exibe a auditoria e encerra
+    if [ "$dry_run" = true ]; then
+        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
+        exit 0
+    fi
+
+    # Confirmação interativa de segurança se não foi passado --yes
+    if [ "$auto_confirm" = false ]; then
+        if [ -t 0 ] || [ -r /dev/tty ]; then
+            interactive_preflight_confirm
+        else
+            show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
+        fi
+    else
+        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
+    fi
 
     local global_start_time
     global_start_time=$(date +%s)
@@ -339,10 +830,10 @@ main() {
 
     # Validação antecipada do SUDO para que a senha não interrompa as animações
     if ! sudo -n true 2>/dev/null; then
-        echo -e "${C_PURPLE}╭─[ 🔐 ] ${C_CYAN}Autenticação de Segurança${C_RESET}"
-        echo -e "${C_PURPLE}│  ${C_YELLOW}🔑 Por favor, informe sua senha de administrador para iniciar o Rebuild:${C_RESET}"
+        echo -e "${C_BORDER}╭─[ ${C_CYAN}🔐${C_BORDER} ] ${C_BOLD}${C_CYAN}Autenticação de Segurança${C_RESET}"
+        echo -e "${C_BORDER}│  ${C_YELLOW}🔑 Por favor, informe sua senha de administrador para iniciar o Rebuild:${C_RESET}"
         sudo -v
-        echo -e "${C_PURPLE}╰── ${C_GREEN}✔ Privilégios administrativos concedidos!${C_RESET}\n"
+        echo -e "${C_BORDER}╰── ${C_GREEN}✔ Privilégios administrativos concedidos!${C_RESET}\n"
     fi
 
     # Mantém o token sudo ativo em segundo plano durante a compilação
@@ -413,29 +904,6 @@ main() {
     # ==========================================================================
     # FASE 3: COMPILAÇÃO & ATIVAÇÃO DO SISTEMA
     # ==========================================================================
-    # Identificação inteligente e à prova de falhas do Host da máquina física
-    local target_host=""
-    local current_hn
-    current_hn=$(hostname 2>/dev/null || echo "nixos")
-
-    if [ -d "$REPO_DIR/hosts/$current_hn" ]; then
-        target_host="$current_hn"
-    else
-        local root_uuid
-        root_uuid=$(findmnt -no UUID / 2>/dev/null || lsblk -no UUID / 2>/dev/null || echo "")
-        if [ -n "$root_uuid" ] && grep -rnq "$root_uuid" "$REPO_DIR/hosts/casa/" 2>/dev/null; then
-            target_host="casa"
-        elif [ -n "$root_uuid" ] && grep -rnq "$root_uuid" "$REPO_DIR/hosts/notegiga/" 2>/dev/null; then
-            target_host="notegiga"
-        elif lspci 2>/dev/null | grep -iq "nvidia"; then
-            target_host="casa"
-        elif grep -iq "amd" /proc/cpuinfo 2>/dev/null; then
-            target_host="casa"
-        else
-            target_host="casa"
-        fi
-    fi
-
     print_step_header "3" "$total_steps" "⚡" "Compilação & Ativação do WillOS [$target_host] ($action)"
 
     # Limpeza preventiva e resolução de conflitos de unidades transientes do systemd
@@ -600,11 +1068,11 @@ main() {
     else
         printf "${C_BORDER}║${C_RESET}  ${C_MUTED}📦  Pacotes Alterados  :${C_RESET}  ${C_MUTED}%-43s${C_RESET} ${C_BORDER}║${C_RESET}\n" "0 pacotes (Configuração em sincronia total)"
     fi
-    printf "${C_BORDER}║${C_RESET}  ${C_MUTED}🌿  Snapshot Git       :${C_RESET}  ${C_PURPLE}[%-7s]${C_RESET} origin/%-30s ${C_BORDER}║${C_RESET}\n" "$commit_sha" "$branch"
+    printf "${C_BORDER}║${C_RESET}  ${C_MUTED}🌿  Snapshot Git       :${C_RESET}  ${C_YELLOW}[%-7s]${C_RESET} origin/%-30s ${C_BORDER}║${C_RESET}\n" "$commit_sha" "$branch"
     printf "${C_BORDER}║${C_RESET}  ${C_MUTED}🛡️   Status do Kernel   :${C_RESET}  ${C_BLUE}%-43s${C_RESET} ${C_BORDER}║${C_RESET}\n" "$kernel_ver (100% Estável)"
-    printf "${C_BORDER}║${C_RESET}  ${C_MUTED}✨  Ambiente Visual    :${C_RESET}  ${C_MAGENTA}%-43s${C_RESET} ${C_BORDER}║${C_RESET}\n" "Hyprland + Caelestia Shell Operacionais"
+    printf "${C_BORDER}║${C_RESET}  ${C_MUTED}✨  Ambiente Visual    :${C_RESET}  ${C_CYAN}%-43s${C_RESET} ${C_BORDER}║${C_RESET}\n" "Hyprland + Caelestia Shell Operacionais"
     echo -e "${C_BORDER}║                                                                             ║${C_RESET}"
-    echo -e "${C_BORDER}║  ${C_BOLD}${C_CYAN}🚀 O seu WillOS está turbinado, atualizado e pronto para uso!${C_RESET}               ${C_BORDER}║${C_RESET}"
+    echo -e "${C_BORDER}║  ${C_BOLD}${C_CYAN}🚀 O seu WillOS está pronto e atualizado para uso!${C_RESET}                           ${C_BORDER}║${C_RESET}"
     echo -e "${C_BORDER}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
 
     # Notificação no Desktop & Som de Conclusão

@@ -89,4 +89,16 @@ Após editar qualquer arquivo de configuração ou dotfile neste repositório:
 rebuild
 ```
 
-*(Ou o comando completo: `sudo nixos-rebuild switch --flake /home/william/nixos-hyprland-caelestia`)*
+### 🛡️ Recursos de Segurança & Auditoria Integrados:
+- **Auditoria de Hardware & Discos**: Antes de executar qualquer alteração, o script inspeciona e valida se as partições e UUIDs configuradas no perfil (`/`, `/boot`, LUKS, Swap) realmente existem e estão ativas no hardware físico atual.
+- **Detecção Inteligente Multi-Host**: Identifica automaticamente se a máquina é `notegiga`, `casa`, etc., através da varredura de hardware e UUIDs.
+- **Confirmação Interativa**: Exibe um resumo completo do que será atualizado e permite confirmar (`S`), cancelar (`n`) ou trocar de perfil interativamente (`t`).
+
+### ⚙️ Opções Úteis do Comando:
+- `rebuild --info`: Apenas exibe o painel de auditoria de hardware, perfil e discos sem aplicar nada.
+- `rebuild --host <nome>` / `-H <nome>`: Força um perfil específico (ex: `rebuild --host notegiga`).
+- `rebuild -u` / `--upgrade`: Atualiza todos os inputs do Flake (`nix flake update`) antes do rebuild.
+- `rebuild -y` / `--yes`: Pula a confirmação interativa para automações.
+- `rebuild --fast`: Pula a sincronização remota do Git (modo offline).
+- `rebuild --boot`: Adiciona a nova geração ao bootloader sem chavear imediatamente.
+

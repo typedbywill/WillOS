@@ -19,22 +19,58 @@ fi
 
 # 2. Determinação de Host
 echo "🔍 Identificando perfil de máquina (multi-host)..."
-ROOT_UUID=$(findmnt -no UUID / 2>/dev/null || lsblk -no UUID / 2>/dev/null || echo "")
 TARGET_HOST=""
+CURRENT_HN=$(hostname 2>/dev/null || echo "")
 
-if [ -n "$ROOT_UUID" ] && grep -rnq "$ROOT_UUID" "$TARGET_DIR/hosts/casa/" 2>/dev/null; then
-    TARGET_HOST="casa"
-    echo "🏠 Perfil 'casa' detectado com base no UUID do disco raiz."
-elif [ -n "$ROOT_UUID" ] && grep -rnq "$ROOT_UUID" "$TARGET_DIR/hosts/notegiga/" 2>/dev/null; then
-    TARGET_HOST="notegiga"
-    echo "💻 Perfil 'notegiga' detectado com base no UUID do disco raiz."
-elif [ -d "$TARGET_DIR/hosts/$(hostname)" ]; then
-    TARGET_HOST="$(hostname)"
-    echo "🎯 Perfil '$TARGET_HOST' detectado pelo hostname."
+if [ -n "$CURRENT_HN" ] && [ "$CURRENT_HN" != "nixos" ] && [ -d "$TARGET_DIR/hosts/$CURRENT_HN" ]; then
+    TARGET_HOST="$CURRENT_HN"
+    echo "🎯 Perfil '$TARGET_HOST' detectado diretamente pelo hostname."
 else
-    echo "ℹ️  Usando perfil 'casa' como padrão."
-    TARGET_HOST="casa"
+    # Varredura de todos os UUIDs presentes no hardware
+    SYSTEM_UUIDS=()
+    if [ -d "/dev/disk/by-uuid" ]; then
+        while IFS= read -r u; do
+            [ -n "$u" ] && SYSTEM_UUIDS+=("$u")
+        done < <(ls -1 /dev/disk/by-uuid/ 2>/dev/null || true)
+    fi
+    while IFS= read -r u; do
+        [ -n "$u" ] && SYSTEM_UUIDS+=("$u")
+    done < <(lsblk -rno UUID 2>/dev/null || true)
+
+    BEST_SCORE=0
+    for h_dir in "$TARGET_DIR/hosts"/*; do
+        [ ! -d "$h_dir" ] && continue
+        h_name="$(basename "$h_dir")"
+        hw_file="$h_dir/hardware-configuration.nix"
+        [ ! -f "$hw_file" ] && continue
+
+        SCORE=0
+        for u in "${SYSTEM_UUIDS[@]}"; do
+            if grep -Fq "$u" "$hw_file" 2>/dev/null; then
+                ((SCORE += 15))
+            fi
+        done
+
+        if grep -Eq "hardware\.cpu\.intel|kvm-intel" "$hw_file" 2>/dev/null && grep -iq "intel" /proc/cpuinfo 2>/dev/null; then
+            ((SCORE += 3))
+        elif grep -Eq "hardware\.cpu\.amd|kvm-amd" "$hw_file" 2>/dev/null && grep -iq "amd" /proc/cpuinfo 2>/dev/null; then
+            ((SCORE += 3))
+        fi
+
+        if [ "$SCORE" -gt "$BEST_SCORE" ]; then
+            BEST_SCORE=$SCORE
+            TARGET_HOST="$h_name"
+        fi
+    done
+
+    if [ -n "$TARGET_HOST" ] && [ "$BEST_SCORE" -gt 0 ]; then
+        echo "💻 Perfil '$TARGET_HOST' detectado com base na compatibilidade de hardware/discos (score: $BEST_SCORE)."
+    else
+        echo "ℹ️  Usando perfil 'casa' como padrão."
+        TARGET_HOST="casa"
+    fi
 fi
+
 
 # 3. Adicionar arquivos ao Git (necessário para o Nix Flakes enxergar)
 git -C "$TARGET_DIR" add -A

@@ -63,10 +63,16 @@ function rebuild --description "Reconstruir o WillOS com visual dinâmico e esta
 end
 
 # Autocompletes interativos do comando rebuild
+complete -c rebuild -l host -s H -d "Especificar perfil do host (casa, notegiga, etc.)" -a "(ls -1 $HOME/nixos-hyprland-caelestia/hosts 2>/dev/null)"
+complete -c rebuild -l yes -s y -d "Pular confirmação interativa pré-rebuild"
+complete -c rebuild -l info -d "Inspecionar compatibilidade de hardware e discos sem rebuild"
+complete -c rebuild -l dry-run -d "Apenas auditar configurações sem aplicar nada"
 complete -c rebuild -l upgrade -s u -d "Atualizar todos os inputs do Flake (nix flake update)"
 complete -c rebuild -l boot -d "Adicionar ao bootloader sem ativar imediatamente"
+complete -c rebuild -l test -d "Testar configuração temporariamente sem alterar boot padrão"
 complete -c rebuild -l show-trace -d "Exibir trace detalhado de erros de compilação"
 complete -c rebuild -l fast -d "Pular sincronização do Git (modo rápido)"
 complete -c rebuild -l no-pull -d "Pular git pull"
 complete -c rebuild -l help -s h -d "Exibir central de ajuda da atualização"
+
 
