@@ -14,9 +14,14 @@
   networking.networkmanager.enable = true;
   networking.firewall = {
     enable = true;
+    checkReversePath = "loose";
+    trustedInterfaces = [ "tailscale0" ];
     allowedTCPPorts = [ 21118 ];
     allowedUDPPorts = [ 21118 ];
   };
+
+  # Habilita o serviço Tailscale
+  services.tailscale.enable = true;
   time.timeZone = "America/Sao_Paulo";
 
   # Habilita execução de binários não-nix pré-compilados
