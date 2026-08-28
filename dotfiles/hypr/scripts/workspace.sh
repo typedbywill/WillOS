@@ -17,6 +17,11 @@ if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
     exit 0
 fi
 
+# Mapeia tecla 0 como workspace 10 (após o 9)
+if [ "$NUM" -eq 0 ]; then
+    NUM=10
+fi
+
 # Quantidade de workspaces por monitor (10 workspaces por monitor: 1-10, 11-20, 21-30)
 WS_PER_MONITOR=10
 
