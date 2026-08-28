@@ -17,8 +17,12 @@ if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
     exit 0
 fi
 
-# Quantidade de workspaces por monitor (9 workspaces por monitor: 1-9, 10-18, 19-27)
-WS_PER_MONITOR=9
+# Quantidade de workspaces por monitor (5 workspaces por monitor: 1-5, 6-10, 11-15)
+WS_PER_MONITOR=5
+
+if [ "$NUM" -gt "$WS_PER_MONITOR" ]; then
+    exit 0
+fi
 
 # Obtém os monitores ativos
 monitors_json=$(hyprctl -j monitors 2>/dev/null)
