@@ -1,6 +1,5 @@
 { lib
 , stdenv
-, fetchurl
 , dpkg
 , buildFHSEnv
 , alsa-lib
@@ -49,9 +48,8 @@
 
 let
   version = "26.818.61809";
-  src = fetchurl {
+  src = builtins.fetchurl {
     url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/latest/chatgpt_amd64.deb";
-    hash = "sha256-Ry0D6IophX8QFbK5F12AUjoTHPG8PpAX6xqP8jTeG9o=";
   };
 
   chatgpt-unpacked = stdenv.mkDerivation {
