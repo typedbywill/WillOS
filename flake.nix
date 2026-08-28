@@ -29,7 +29,7 @@
       specialArgs = { inherit inputs; };
       modules = [
         ./configuration.nix
-        ./hardware-configuration.nix
+        (if builtins.pathExists ./hardware-configuration.nix then ./hardware-configuration.nix else {})
         (if builtins.pathExists ./local-config.nix then ./local-config.nix else {})
         home-manager.nixosModules.home-manager
         {

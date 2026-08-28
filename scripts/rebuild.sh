@@ -35,7 +35,16 @@ C_BRIGHT_BLUE="\033[94m"
 C_BRIGHT_CYAN="\033[96m"
 C_BRIGHT_WHITE="\033[97m"
 
-REPO_DIR="${REPO_DIR:-/home/william/nixos-hyprland-caelestia}"
+if [ -z "$REPO_DIR" ]; then
+    SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
+    if [ -f "$SCRIPT_ROOT/flake.nix" ]; then
+        REPO_DIR="$SCRIPT_ROOT"
+    elif [ -d "$HOME/nixos-hyprland-caelestia" ] && [ -f "$HOME/nixos-hyprland-caelestia/flake.nix" ]; then
+        REPO_DIR="$HOME/nixos-hyprland-caelestia"
+    else
+        REPO_DIR="/home/william/nixos-hyprland-caelestia"
+    fi
+fi
 SUDO_PID=""
 
 # ------------------------------------------------------------------------------
@@ -268,7 +277,39 @@ ensure_local_hardware_ready() {
             cp "/etc/nixos/hardware-configuration.nix" "$REPO_DIR/hardware-configuration.nix"
         elif command -v nixos-generate-config >/dev/null 2>&1; then
             nixos-generate-config --show-hardware-config > "$REPO_DIR/hardware-configuration.nix"
+        else
+            sudo nixos-generate-config --show-hardware-config > "$REPO_DIR/hardware-configuration.nix" 2>/dev/null || true
         fi
+    fi
+
+    if [ ! -f "$REPO_DIR/local-config.nix" ]; then
+        local detected_hn
+        detected_hn=$(hostname 2>/dev/null || echo "")
+        if [ -z "$detected_hn" ] || [ "$detected_hn" = "nixos" ]; then
+            detected_hn="willos"
+        fi
+
+        local detected_gpu="none"
+        if lspci 2>/dev/null | grep -iq "nvidia"; then
+            detected_gpu="nvidia"
+        elif lspci 2>/dev/null | grep -iE "vga|3d" | grep -iq "intel"; then
+            detected_gpu="intel"
+        elif lspci 2>/dev/null | grep -iE "vga|3d" | grep -iq "amd\|radeon"; then
+            detected_gpu="amd"
+        fi
+
+        cat <<EOF > "$REPO_DIR/local-config.nix"
+# ==============================================================================
+# 🛠️ WillOS - Configuração Local da Máquina
+# Gerado automaticamente pelo rebuild.sh
+# ==============================================================================
+{ lib, ... }:
+
+{
+  networking.hostName = "${detected_hn}";
+  myHardware.gpu.type = "${detected_gpu}";
+}
+EOF
     fi
 
     # Garante que o Git do Flake veja os arquivos locais sem commitar (intent-to-add)
@@ -804,8 +845,10 @@ main() {
     # FASE 2: PREPARAÇÃO DO NIX FLAKE & INTEGRIDADE
     # ==========================================================================
     print_step_header "2" "$total_steps" "📦" "Preparação do Flake & Indexação"
-
+    # Prepara o índice para o Flake mantendo arquivos locais isolados (apenas intent-to-add)
+    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
     run_with_dynamic_hud "Indexação de Arquivos para o Flake" "Adicionando alterações ao índice Git..." git -C "$REPO_DIR" add -A
+    git -C "$REPO_DIR" add -f -N hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     if [ "$do_flake_update" = true ]; then
         run_with_dynamic_hud "Atualização de Inputs do Flake" "Executando nix flake update..." nix flake update --flake "$REPO_DIR"
@@ -932,9 +975,14 @@ main() {
 
     local commit_sha=""
 
-    # Se houver alterações locais, cria o commit
-    if ! git -C "$REPO_DIR" diff --staged --quiet || ! git -C "$REPO_DIR" diff --quiet; then
-        git -C "$REPO_DIR" add -A
+    # Remove arquivos locais ignorados do stage antes de commitar
+    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
+
+    # Adiciona todas as modificações reais (rastreadas ou novos arquivos não ignorados)
+    git -C "$REPO_DIR" add -A
+
+    # Se houver alterações staged reais para commit
+    if ! git -C "$REPO_DIR" diff --staged --quiet; then
         if [ -z "$commit_msg" ]; then
             local ts
             ts=$(date "+%Y-%m-%d %H:%M:%S")
@@ -949,6 +997,9 @@ main() {
         print_substep "ℹ️" "Nenhuma alteração pendente para commit."
         commit_sha=$(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null || echo "")
     fi
+
+    # Restaura o status intent-to-add para que o Nix Flakes continue enxergando os arquivos locais
+    git -C "$REPO_DIR" add -f -N hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     # Envio com HUD dinâmico
     if run_with_dynamic_hud "Publicação no GitHub (origin/$branch)" "Enviando alterações..." git -C "$REPO_DIR" push origin "$branch"; then

@@ -232,6 +232,18 @@
     virtio-win
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
+    (pkgs.writeShellScriptBin "rebuild" ''
+      REPO_SCRIPT="$HOME/nixos-hyprland-caelestia/scripts/rebuild.sh"
+      CONFIG_SCRIPT="$HOME/.config/scripts/rebuild.sh"
+      if [ -f "$REPO_SCRIPT" ]; then
+        exec bash "$REPO_SCRIPT" "$@"
+      elif [ -f "$CONFIG_SCRIPT" ]; then
+        exec bash "$CONFIG_SCRIPT" "$@"
+      else
+        echo "❌ Script de rebuild não encontrado em $REPO_SCRIPT nem em $CONFIG_SCRIPT" >&2
+        exit 1
+      fi
+    '')
   ];
 
   # Serviço do Cloudflare Tunnel (Inicia automaticamente apenas se o arquivo de token existir)
