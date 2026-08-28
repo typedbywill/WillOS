@@ -44,7 +44,8 @@
     nixosConfigurations = {
       casa = mkSystem ./hosts/casa;
       notegiga = mkSystem ./hosts/notegiga;
-      nixos = mkSystem ./hardware-configuration.nix;
+      # Fallback seguro para quando o hostname atual da máquina ainda for 'nixos'
+      nixos = mkSystem ./hosts/casa;
     };
   };
 }

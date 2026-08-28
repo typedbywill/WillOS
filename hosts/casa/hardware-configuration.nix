@@ -31,6 +31,7 @@
   fileSystems."/mnt/DadosLinux" = {
     device = "/dev/disk/by-uuid/fa2ac10d-121a-4fdb-9e08-6b46ed74ca66";
     fsType = "ext4";
+    options = [ "defaults" "nofail" ];
   };
 
   swapDevices = [

@@ -413,7 +413,30 @@ main() {
     # ==========================================================================
     # FASE 3: COMPILAÇÃO & ATIVAÇÃO DO SISTEMA
     # ==========================================================================
-    print_step_header "3" "$total_steps" "⚡" "Compilação & Ativação do WillOS ($action)"
+    # Identificação inteligente e à prova de falhas do Host da máquina física
+    local target_host=""
+    local current_hn
+    current_hn=$(hostname 2>/dev/null || echo "nixos")
+
+    if [ -d "$REPO_DIR/hosts/$current_hn" ]; then
+        target_host="$current_hn"
+    else
+        local root_uuid
+        root_uuid=$(findmnt -no UUID / 2>/dev/null || lsblk -no UUID / 2>/dev/null || echo "")
+        if [ -n "$root_uuid" ] && grep -rnq "$root_uuid" "$REPO_DIR/hosts/casa/" 2>/dev/null; then
+            target_host="casa"
+        elif [ -n "$root_uuid" ] && grep -rnq "$root_uuid" "$REPO_DIR/hosts/notegiga/" 2>/dev/null; then
+            target_host="notegiga"
+        elif lspci 2>/dev/null | grep -iq "nvidia"; then
+            target_host="casa"
+        elif grep -iq "amd" /proc/cpuinfo 2>/dev/null; then
+            target_host="casa"
+        else
+            target_host="casa"
+        fi
+    fi
+
+    print_step_header "3" "$total_steps" "⚡" "Compilação & Ativação do WillOS [$target_host] ($action)"
 
     # Limpeza preventiva e resolução de conflitos de unidades transientes do systemd
     if sudo systemctl is-active --quiet nixos-rebuild-switch-to-configuration.service 2>/dev/null; then
@@ -424,7 +447,7 @@ main() {
     fi
     sudo systemctl reset-failed nixos-rebuild-switch-to-configuration.service 2>/dev/null || true
 
-    if ! run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema..." sudo nixos-rebuild "$action" --flake "$REPO_DIR" "${rebuild_args[@]}"; then
+    if ! run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema ($target_host)..." sudo nixos-rebuild "$action" --flake "$REPO_DIR#$target_host" "${rebuild_args[@]}"; then
         print_step_fail "Falha durante a reconstrução do WillOS."
         play_sound "error"
         send_notify "critical" "❌ Erro no Rebuild WillOS" "A compilação do sistema falhou. Verifique os logs no terminal."

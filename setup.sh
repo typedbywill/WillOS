@@ -17,40 +17,33 @@ else
     git clone "$REPO_URL" "$TARGET_DIR"
 fi
 
-# 2. Configuração de Hardware local da máquina de destino
-echo "🔍 Verificando hardware da máquina..."
-if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
-    echo "📋 Copiando /etc/nixos/hardware-configuration.nix desta máquina..."
-    cp -f /etc/nixos/hardware-configuration.nix "$TARGET_DIR/hardware-configuration.nix"
-elif [ ! -f "$TARGET_DIR/hardware-configuration.nix" ]; then
-    echo "⚙️  Gerando hardware-configuration.nix local..."
-    sudo nixos-generate-config --show-hardware-config > "$TARGET_DIR/hardware-configuration.nix"
-else
-    echo "ℹ️  Mantendo hardware-configuration.nix já presente."
-fi
+# 2. Determinação de Host
+echo "🔍 Identificando perfil de máquina (multi-host)..."
+ROOT_UUID=$(findmnt -no UUID / 2>/dev/null || lsblk -no UUID / 2>/dev/null || echo "")
+TARGET_HOST=""
 
-# Detecta GPU e define o perfil se ainda não estiver configurado
-if ! grep -q "myHardware.gpu.type" "$TARGET_DIR/hardware-configuration.nix"; then
-    echo "🔎 Detectando GPU para definir perfil de hardware..."
-    if lspci 2>/dev/null | grep -iq "nvidia"; then
-        echo "🎮 GPU NVIDIA detectada. Ativando perfil Nvidia..."
-        sed -i 's/}$/  myHardware.gpu.type = lib.mkDefault "nvidia";\n}/' "$TARGET_DIR/hardware-configuration.nix"
-    elif lspci 2>/dev/null | grep -iq "amd"; then
-        echo "🎮 GPU AMD detectada. Ativando perfil AMD..."
-        sed -i 's/}$/  myHardware.gpu.type = lib.mkDefault "amd";\n}/' "$TARGET_DIR/hardware-configuration.nix"
-    else
-        echo "💻 GPU Intel/Genérica detectada. Ativando perfil Intel..."
-        sed -i 's/}$/  myHardware.gpu.type = lib.mkDefault "intel";\n}/' "$TARGET_DIR/hardware-configuration.nix"
-    fi
+if [ -n "$ROOT_UUID" ] && grep -rnq "$ROOT_UUID" "$TARGET_DIR/hosts/casa/" 2>/dev/null; then
+    TARGET_HOST="casa"
+    echo "🏠 Perfil 'casa' detectado com base no UUID do disco raiz."
+elif [ -n "$ROOT_UUID" ] && grep -rnq "$ROOT_UUID" "$TARGET_DIR/hosts/notegiga/" 2>/dev/null; then
+    TARGET_HOST="notegiga"
+    echo "💻 Perfil 'notegiga' detectado com base no UUID do disco raiz."
+elif [ -d "$TARGET_DIR/hosts/$(hostname)" ]; then
+    TARGET_HOST="$(hostname)"
+    echo "🎯 Perfil '$TARGET_HOST' detectado pelo hostname."
+else
+    echo "ℹ️  Usando perfil 'casa' como padrão."
+    TARGET_HOST="casa"
 fi
 
 # 3. Adicionar arquivos ao Git (necessário para o Nix Flakes enxergar)
 git -C "$TARGET_DIR" add -A
 
 # 4. Reconstruir e aplicar o sistema NixOS
-echo "🚀 Aplicando configuração do NixOS..."
-sudo nixos-rebuild switch --flake "$TARGET_DIR#nixos" "$@"
+echo "🚀 Aplicando configuração do NixOS ($TARGET_HOST)..."
+sudo nixos-rebuild switch --flake "$TARGET_DIR#$TARGET_HOST" "$@"
 
 echo "========================================="
-echo "✨ WillOS configurado e restaurado com sucesso!"
+echo "✨ WillOS configurado e restaurado com sucesso para o host [$TARGET_HOST]!"
 echo "========================================="
+
