@@ -3,9 +3,9 @@
 # ==============================================================================
 # Workspace Manager per Monitor for Hyprland
 # 
-# Permite ter conjuntos de workspaces independentes por monitor (ex: 1-9 na tela 1,
-# 10-18 na tela 2, 19-27 na tela 3).
-# Ao pressionar SUPER+1..9, a navegação ocorre relativamente ao monitor focado.
+# Permite ter conjuntos de workspaces independentes por monitor (ex: 1-5 na tela 1,
+# 6-10 na tela 2, 11-15 na tela 3).
+# Ao pressionar SUPER+1..5, a navegação ocorre relativamente ao monitor focado.
 # ==============================================================================
 
 export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin"
@@ -17,7 +17,7 @@ if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
     exit 0
 fi
 
-# Quantidade de workspaces por monitor
+# Quantidade de workspaces por monitor (padrão 5)
 WS_PER_MONITOR=9
 
 # Obtém os monitores ativos
