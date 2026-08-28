@@ -9,13 +9,20 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    quickshell = {
+      url = "github:outfoxxed/quickshell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     caelestia-shell = {
       url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.quickshell.follows = "quickshell";
     };
     caelestia-cli = {
       url = "github:caelestia-dots/cli";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.caelestia-shell.follows = "caelestia-shell";
     };
     apple-fonts = {
       url = "github:Lyndeno/apple-fonts.nix";
