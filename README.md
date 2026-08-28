@@ -2,28 +2,25 @@
 
 Configuração declarativa, moderna e 100% reproduzível do **WillOS** (NixOS com Flakes, Hyprland, Caelestia Shell e Home Manager).
 
-Esta é a **Camada Base Pública** do sistema. Ela foi projetada para ser **completamente autossuficiente e genérica**, permitindo instalar um desktop visualmente completo com Hyprland, Caelestia Shell, fontes e temas em qualquer máquina nova sem depender de chaves SSH, credenciais ou dados sensíveis.
+Esta é a **Camada Base Pública** do sistema. Ela foi projetada como uma **plataforma universal plug-and-play**, permitindo instalar um desktop visualmente completo com Hyprland, Caelestia Shell, fontes, atalhos e ferramentas em qualquer computador sem acoplamento de hardware.
 
 ---
 
-## ⚡ Princípio Fundamental: Separação entre Configuração vs. Hardware
+## ⚡ Princípio Fundamental: Separação entre Sistema vs. Hardware
 
 > [!IMPORTANT]
-> **A sincronização é apenas para Configurações e Dotfiles. Hardware, Infraestrutura e Partições NUNCA devem ser acoplados rigidamente entre máquinas.**
+> **O WillOS compartilha configurações, ambientes de trabalho e dotfiles. O hardware (discos, UUIDs e GPU) é desacoplado e configurado localmente em cada máquina.**
 
-- **O que É sincronizado (Configurações Universais)**:
+- **O que É sincronizado no Git (Configurações Universais)**:
   - Ambiente gráfico (Hyprland, Caelestia Shell, Waybar, temas visuais, esquemas de cores e fontes).
-  - Shell Fish, aliases, atalhos de teclado e utilitários do terminal.
+  - Shell Fish, aliases, autocompletes, atalhos de teclado e utilitários do terminal.
   - Programas, associações de arquivos e preferências do usuário (Home Manager).
   - Scripts de comportamento do desktop (workspaces multi-telas, display virtual, Sunshine).
+  - Módulos do sistema (GPU modular: `intel`, `nvidia`, `amd`, `hybrid-intel-nvidia`).
 
-- **O que NÃO deve ser sincronizado de forma estática (Hardware & Infraestrutura)**:
-  - **Discos, UUIDs e Criptografia (LUKS)**: Cada máquina física possui sua própria tabela de partições e identificadores únicos.
-  - **Processador e Módulos de Kernel**: Microcódigo Intel vs. AMD e módulos de virtualização (`kvm-intel` vs. `kvm-amd`).
-  - **Drivers de GPU**: Gerenciados dinamicamente via módulo modular [`modules/gpu.nix`](./modules/gpu.nix) (`intel`, `nvidia`, `hybrid-intel-nvidia` ou `amd`).
-
-📌 **Como o sistema resolve isso?**
-O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hosts/casa`, `hosts/notegiga`, etc.) e preserva o `hardware-configuration.nix` gerado localmente em novas instalações através do `setup.sh`.
+- **O que É mantido LOCALMENTE fora do Git**:
+  - `hardware-configuration.nix` *(ignorado no Git)*: Gerado pelo `nixos-generate-config` na própria máquina com os UUIDs das partições e módulos de boot daquela placa-mãe.
+  - `local-config.nix` *(ignorado no Git)*: Arquivo simples para definir o Hostname e o Driver de GPU da máquina atual (veja `local-config.example.nix`).
 
 ---
 
@@ -38,17 +35,19 @@ O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hos
 
 ```text
 .
-├── setup.sh                   # Script de instalação/restauração zero-auth em qualquer máquina
-├── flake.nix                  # Flake principal do sistema com suporte multi-host
+├── setup.sh                   # Script instalador universal e autônomo para qualquer máquina
+├── flake.nix                  # Flake principal universal (nixosConfigurations.willos)
 ├── flake.lock                 # Travamento de versões dos pacotes e flakes
 ├── configuration.nix          # Configuração compartilhada do sistema (serviços, áudio, boot, etc.)
-├── hardware-configuration.nix # Mapeamento de hardware genérico/fallback
 ├── home.nix                   # Home Manager (pacotes de usuário, temas GTK/Qt, dotfiles)
-├── hosts/                     # Configurações isoladas de hardware por máquina
-│   ├── casa/                  # Desktop AMD + GPU NVIDIA
-│   └── notegiga/                # Notebook Intel + GPU Intel + LUKS
+├── local-config.example.nix   # Template documentado de configurações locais de máquina
+│
+├── hardware-configuration.nix # [Local / .gitignore] Gerado automaticamente no hardware local
+├── local-config.nix           # [Local / .gitignore] Configurações locais (GPU, Hostname)
+│
 ├── modules/                   # Módulos opcionais do sistema
-│   └── gpu.nix                # Gerenciador dinâmico de drivers gráficos (Intel / AMD / Nvidia)
+│   ├── gpu.nix                # Gerenciador dinâmico de drivers gráficos (Intel / AMD / Nvidia)
+│   └── spotify-inactivity-watcher.nix # Watcher de inatividade do Spotify
 └── dotfiles/                  # Arquivos de configuração dos utilitários
     ├── hypr/
     │   ├── hyprland.conf      # Configuração do compositor Hyprland
@@ -68,31 +67,9 @@ O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hos
 
 ## 🌐 Como Instalar em Qualquer Máquina Nova (Zero Auth)
 
-Você pode instalar o **WillOS** diretamente sem precisar de chaves SSH ou de autenticação.
+### Opção 1: Script Automatizado (`setup.sh`) *(Recomendado)*
 
-### Opção 1: Direto via Flake Remoto *(Recomendado — Não requer Git)*
-
-O próprio Nix baixa e constrói tudo a partir do repositório remoto:
-
-* **Em um sistema NixOS em execução:**
-  ```bash
-  # Para o perfil Notebook:
-  sudo nixos-rebuild switch --flake github:typedbywill/myNix#notegiga
-
-  # Para o perfil Desktop:
-  sudo nixos-rebuild switch --flake github:typedbywill/myNix#casa
-  ```
-
-* **Durante uma instalação limpa via pendrive/Live ISO (`nixos-install`):**
-  ```bash
-  sudo nixos-install --flake github:typedbywill/myNix#notegiga
-  ```
-
----
-
-### Opção 2: Script Automatizado (`setup.sh`)
-
-Se preferir que o script clone o repositório localmente em `~/nixos-hyprland-caelestia`, detecte automaticamente o hardware/perfil e aplique o sistema:
+O instalador clona o repositório, gera o `hardware-configuration.nix` da máquina, auto-detecta a GPU (Nvidia, Intel ou AMD) e ativa o sistema:
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/typedbywill/myNix/main/setup.sh)
@@ -100,6 +77,24 @@ bash <(curl -sL https://raw.githubusercontent.com/typedbywill/myNix/main/setup.s
 
 > [!NOTE]
 > O `setup.sh` possui fallback automático via `nix-shell` e funcionará perfeitamente mesmo se a máquina ainda não tiver o `git` instalado.
+
+---
+
+### Opção 2: Instalação Manual
+
+```bash
+git clone https://github.com/typedbywill/myNix.git ~/nixos-hyprland-caelestia
+cd ~/nixos-hyprland-caelestia
+
+# Copiar ou gerar o hardware-configuration da máquina:
+cp /etc/nixos/hardware-configuration.nix ./hardware-configuration.nix
+
+# Criar a configuração local com GPU e Hostname:
+cp local-config.example.nix local-config.nix
+
+# Aplicar o sistema:
+sudo nixos-rebuild switch --flake .#willos
+```
 
 ---
 
@@ -112,15 +107,14 @@ rebuild
 ```
 
 ### 🛡️ Recursos de Segurança & Auditoria Integrados:
-- **Auditoria de Hardware & Discos**: Antes de executar qualquer alteração, o script inspeciona e valida se as partições e UUIDs configuradas no perfil (`/`, `/boot`, LUKS, Swap) realmente existem e estão ativas no hardware físico atual.
-- **Detecção Inteligente Multi-Host**: Identifica automaticamente se a máquina é `notegiga`, `casa`, etc., através da varredura de hardware e UUIDs.
-- **Confirmação Interativa**: Exibe um resumo completo do que será atualizado e permite confirmar (`S`), cancelar (`n`) ou trocar de perfil interativamente (`t`).
+- **Auditoria de Hardware & Discos**: Antes de executar o rebuild, o script inspeciona e valida se as partições e discos mapeados no hardware local estão ativos.
+- **Detecção e Preservação Local**: Seus arquivos `local-config.nix` e `hardware-configuration.nix` são preservados e isolados do Git.
+- **Confirmação Interativa**: Exibe um resumo completo da geração atual, discos, GPU e alterações antes de aplicar.
 
 ### ⚙️ Opções Úteis do Comando:
-- `rebuild --info`: Apenas exibe o painel de auditoria de hardware, perfil e discos sem aplicar nada.
-- `rebuild --host <nome>` / `-H <nome>`: Força um perfil específico (ex: `rebuild --host notegiga`).
+- `rebuild --info`: Apenas exibe o painel de auditoria de hardware e discos sem aplicar nada.
 - `rebuild -u` / `--upgrade`: Atualiza todos os inputs do Flake (`nix flake update`) antes do rebuild.
 - `rebuild -y` / `--yes`: Pula a confirmação interativa para automações.
-- `rebuild --fast`: Pula a sincronização remota do Git (modo offline).
-- `rebuild --boot`: Adiciona a nova geração ao bootloader sem chavear imediatamente.
-
+- `rebuild --fast`: Pula a sincronização remota do Git (modo offline/rápido).
+- `rebuild --boot`: Adiciona a nova geração ao bootloader sem ativar imediatamente.
+- `rebuild --test`: Testa a configuração temporariamente sem alterar o bootloader.

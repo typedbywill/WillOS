@@ -6,3 +6,4 @@ result-*
 .direnv/
 dotfiles/hypr/scheme/current.conf
 hardware-configuration.nix
+local-config.nix

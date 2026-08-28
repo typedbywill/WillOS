@@ -5,10 +5,10 @@ REPO_URL="https://github.com/typedbywill/myNix.git"
 TARGET_DIR="${TARGET_DIR:-$HOME/nixos-hyprland-caelestia}"
 
 echo "========================================="
-echo "❄️  WillOS - Setup & Restore Script"
+echo "❄️  WillOS - Universal Setup & Installer"
 echo "========================================="
 
-# Helper para executar comandos git mesmo se o git não estiver instalado no sistema base
+# Helper para executar comandos git mesmo se o git não estiver no PATH inicial
 run_git() {
     if command -v git >/dev/null 2>&1; then
         git "$@"
@@ -26,69 +26,69 @@ else
     run_git clone "$REPO_URL" "$TARGET_DIR"
 fi
 
-# 2. Determinação de Host
-echo "🔍 Identificando perfil de máquina (multi-host)..."
-TARGET_HOST=""
-CURRENT_HN=$(hostname 2>/dev/null || echo "")
-
-if [ -n "$CURRENT_HN" ] && [ "$CURRENT_HN" != "nixos" ] && [ -d "$TARGET_DIR/hosts/$CURRENT_HN" ]; then
-    TARGET_HOST="$CURRENT_HN"
-    echo "🎯 Perfil '$TARGET_HOST' detectado diretamente pelo hostname."
-else
-    # Varredura de todos os UUIDs presentes no hardware
-    SYSTEM_UUIDS=()
-    if [ -d "/dev/disk/by-uuid" ]; then
-        while IFS= read -r u; do
-            [ -n "$u" ] && SYSTEM_UUIDS+=("$u")
-        done < <(ls -1 /dev/disk/by-uuid/ 2>/dev/null || true)
-    fi
-    while IFS= read -r u; do
-        [ -n "$u" ] && SYSTEM_UUIDS+=("$u")
-    done < <(lsblk -rno UUID 2>/dev/null || true)
-
-    BEST_SCORE=0
-    for h_dir in "$TARGET_DIR/hosts"/*; do
-        [ ! -d "$h_dir" ] && continue
-        h_name="$(basename "$h_dir")"
-        hw_file="$h_dir/hardware-configuration.nix"
-        [ ! -f "$hw_file" ] && continue
-
-        SCORE=0
-        for u in "${SYSTEM_UUIDS[@]}"; do
-            if grep -Fq "$u" "$hw_file" 2>/dev/null; then
-                ((SCORE += 15))
-            fi
-        done
-
-        if grep -Eq "hardware\.cpu\.intel|kvm-intel" "$hw_file" 2>/dev/null && grep -iq "intel" /proc/cpuinfo 2>/dev/null; then
-            ((SCORE += 3))
-        elif grep -Eq "hardware\.cpu\.amd|kvm-amd" "$hw_file" 2>/dev/null && grep -iq "amd" /proc/cpuinfo 2>/dev/null; then
-            ((SCORE += 3))
-        fi
-
-        if [ "$SCORE" -gt "$BEST_SCORE" ]; then
-            BEST_SCORE=$SCORE
-            TARGET_HOST="$h_name"
-        fi
-    done
-
-    if [ -n "$TARGET_HOST" ] && [ "$BEST_SCORE" -gt 0 ]; then
-        echo "💻 Perfil '$TARGET_HOST' detectado com base na compatibilidade de hardware/discos (score: $BEST_SCORE)."
+# 2. Configurar o hardware-configuration.nix local
+if [ ! -f "$TARGET_DIR/hardware-configuration.nix" ]; then
+    if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
+        echo "📋 Copiando hardware-configuration.nix existente de /etc/nixos/..."
+        cp "/etc/nixos/hardware-configuration.nix" "$TARGET_DIR/hardware-configuration.nix"
     else
-        echo "ℹ️  Usando perfil 'casa' como padrão."
-        TARGET_HOST="casa"
+        echo "⚙️  Gerando hardware-configuration.nix para esta máquina..."
+        if command -v nixos-generate-config >/dev/null 2>&1; then
+            nixos-generate-config --show-hardware-config > "$TARGET_DIR/hardware-configuration.nix"
+        else
+            sudo nixos-generate-config --show-hardware-config > "$TARGET_DIR/hardware-configuration.nix"
+        fi
     fi
+else
+    echo "✔ hardware-configuration.nix local já configurado."
 fi
 
+# 3. Gerar local-config.nix (se ainda não existir) com detecção inteligente de GPU e Hostname
+if [ ! -f "$TARGET_DIR/local-config.nix" ]; then
+    echo "🔍 Detectando hardware local (GPU e Hostname)..."
+    
+    DETECTED_HN=$(hostname 2>/dev/null || echo "")
+    if [ -z "$DETECTED_HN" ] || [ "$DETECTED_HN" = "nixos" ]; then
+        DETECTED_HN="willos"
+    fi
 
-# 3. Adicionar arquivos ao Git (necessário para o Nix Flakes enxergar)
-run_git -C "$TARGET_DIR" add -A
+    DETECTED_GPU="none"
+    if lspci 2>/dev/null | grep -iq "nvidia"; then
+        DETECTED_GPU="nvidia"
+    elif lspci 2>/dev/null | grep -iE "vga|3d" | grep -iq "intel"; then
+        DETECTED_GPU="intel"
+    elif lspci 2>/dev/null | grep -iE "vga|3d" | grep -iq "amd\|radeon"; then
+        DETECTED_GPU="amd"
+    fi
 
-# 4. Reconstruir e aplicar o sistema NixOS
-echo "🚀 Aplicando configuração do NixOS ($TARGET_HOST)..."
-sudo nixos-rebuild switch --flake "$TARGET_DIR#$TARGET_HOST" "$@"
+    echo "💡 Hardware detectado: Hostname='$DETECTED_HN', GPU='$DETECTED_GPU'"
+    cat <<EOF > "$TARGET_DIR/local-config.nix"
+# ==============================================================================
+# 🛠️ WillOS - Configuração Local da Máquina
+# Gerado automaticamente pelo setup.sh
+# ==============================================================================
+{ lib, ... }:
+
+{
+  networking.hostName = "${DETECTED_HN}";
+  myHardware.gpu.type = "${DETECTED_GPU}";
+}
+EOF
+    echo "✔ local-config.nix criado com sucesso."
+else
+    echo "✔ local-config.nix já existente (mantendo preferências locais)."
+fi
+
+# 4. Notificar Git sobre os arquivos locais (intent-to-add para o Nix Flakes enxergar)
+run_git -C "$TARGET_DIR" add -f -N hardware-configuration.nix 2>/dev/null || true
+if [ -f "$TARGET_DIR/local-config.nix" ]; then
+    run_git -C "$TARGET_DIR" add -f -N local-config.nix 2>/dev/null || true
+fi
+
+# 5. Reconstruir e aplicar o sistema NixOS
+echo "🚀 Aplicando configuração universal do WillOS..."
+sudo nixos-rebuild switch --flake "$TARGET_DIR#willos" "$@"
 
 echo "========================================="
-echo "✨ WillOS configurado e restaurado com sucesso para o host [$TARGET_HOST]!"
+echo "✨ WillOS configurado e ativado com sucesso!"
 echo "========================================="
-

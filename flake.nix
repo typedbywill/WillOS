@@ -25,11 +25,12 @@
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
   let
-    mkSystem = hostModule: nixpkgs.lib.nixosSystem {
+    mkWillOS = { extraModules ? [] }: nixpkgs.lib.nixosSystem {
       specialArgs = { inherit inputs; };
       modules = [
         ./configuration.nix
-        hostModule
+        ./hardware-configuration.nix
+        (if builtins.pathExists ./local-config.nix then ./local-config.nix else {})
         home-manager.nixosModules.home-manager
         {
           home-manager.useGlobalPkgs = true;
@@ -38,14 +39,16 @@
           home-manager.extraSpecialArgs = { inherit inputs; };
           home-manager.users.william = import ./home.nix;
         }
-      ];
+      ] ++ extraModules;
     };
   in {
     nixosConfigurations = {
-      casa = mkSystem ./hosts/casa;
-      notegiga = mkSystem ./hosts/notegiga;
-      # Fallback seguro para quando o hostname atual da máquina ainda for 'nixos'
-      nixos = mkSystem ./hosts/casa;
+      willos = mkWillOS {};
+      default = self.nixosConfigurations.willos;
+      # Aliases para retrocompatibilidade
+      notegiga = self.nixosConfigurations.willos;
+      casa = self.nixosConfigurations.willos;
+      nixos = self.nixosConfigurations.willos;
     };
   };
 }

@@ -258,99 +258,32 @@ run_with_dynamic_hud() {
 # ------------------------------------------------------------------------------
 # 🔍 DETECÇÃO INTELIGENTE DE PERFIL E PARSER DE HARDWARE
 # ------------------------------------------------------------------------------
+# 🔍 DETECÇÃO DE HARDWARE LOCAL E PARSER DE CONFIGURAÇÕES
+# ------------------------------------------------------------------------------
 
-# Lista todos os perfis disponíveis em hosts/
-get_available_hosts() {
-    local hosts=()
-    if [ -d "$REPO_DIR/hosts" ]; then
-        for h_dir in "$REPO_DIR/hosts"/*; do
-            if [ -d "$h_dir" ]; then
-                hosts+=("$(basename "$h_dir")")
-            fi
-        done
+# Assegura que o hardware local está pronto e configurado
+ensure_local_hardware_ready() {
+    if [ ! -f "$REPO_DIR/hardware-configuration.nix" ]; then
+        if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
+            cp "/etc/nixos/hardware-configuration.nix" "$REPO_DIR/hardware-configuration.nix"
+        elif command -v nixos-generate-config >/dev/null 2>&1; then
+            nixos-generate-config --show-hardware-config > "$REPO_DIR/hardware-configuration.nix"
+        fi
     fi
-    echo "${hosts[@]}"
+
+    # Garante que o Git do Flake veja os arquivos locais sem commitar (intent-to-add)
+    git -C "$REPO_DIR" add -f -N hardware-configuration.nix 2>/dev/null || true
+    if [ -f "$REPO_DIR/local-config.nix" ]; then
+        git -C "$REPO_DIR" add -f -N local-config.nix 2>/dev/null || true
+    fi
 }
 
-# Detecção pontuada baseada em UUIDs reais, CPU e GPU
-detect_host_profile() {
-    local detected_host=""
-    local best_score=0
-    local available_hosts=()
-    read -r -a available_hosts <<< "$(get_available_hosts)"
-
-    local current_hn
-    current_hn=$(hostname 2>/dev/null || echo "")
-    if [ -n "$current_hn" ] && [ "$current_hn" != "nixos" ] && [ -d "$REPO_DIR/hosts/$current_hn" ]; then
-        echo "$current_hn"
-        return 0
-    fi
-
-    local system_uuids=()
-    if [ -d "/dev/disk/by-uuid" ]; then
-        while IFS= read -r u; do
-            [ -n "$u" ] && system_uuids+=("$u")
-        done < <(ls -1 /dev/disk/by-uuid/ 2>/dev/null || true)
-    fi
-    while IFS= read -r u; do
-        [ -n "$u" ] && system_uuids+=("$u")
-    done < <(lsblk -rno UUID 2>/dev/null || true)
-
-    for h in "${available_hosts[@]}"; do
-        local score=0
-        local hw_file="$REPO_DIR/hosts/$h/hardware-configuration.nix"
-        local def_file="$REPO_DIR/hosts/$h/default.nix"
-        [ ! -f "$hw_file" ] && continue
-
-        # Pontuação de UUIDs de discos mapeados
-        for u in "${system_uuids[@]}"; do
-            if grep -Fq "$u" "$hw_file" 2>/dev/null; then
-                ((score += 15))
-            fi
-        done
-
-        # Pontuação por fabricante de CPU
-        if grep -Eq "hardware\.cpu\.intel|kvm-intel" "$hw_file" 2>/dev/null && grep -iq "intel" /proc/cpuinfo 2>/dev/null; then
-            ((score += 3))
-        elif grep -Eq "hardware\.cpu\.amd|kvm-amd" "$hw_file" 2>/dev/null && grep -iq "amd" /proc/cpuinfo 2>/dev/null; then
-            ((score += 3))
-        fi
-
-        # Pontuação por GPU instalada
-        local host_gpu
-        host_gpu=$(grep -E "myHardware\.gpu\.type" "$def_file" "$hw_file" 2>/dev/null | sed -E "s/.*\"([^\"]+)\".*/\1/" | head -n1 || echo "")
-        if [ "$host_gpu" = "nvidia" ] && lspci 2>/dev/null | grep -iq "nvidia"; then
-            ((score += 5))
-        elif [ "$host_gpu" = "intel" ] && lspci 2>/dev/null | grep -iE "vga|display|3d" | grep -iq "intel"; then
-            ((score += 5))
-        elif [ "$host_gpu" = "amd" ] && lspci 2>/dev/null | grep -iE "vga|display|3d" | grep -iq "amd\|radeon"; then
-            ((score += 5))
-        fi
-
-        if [ "$score" -gt "$best_score" ]; then
-            best_score=$score
-            detected_host="$h"
-        fi
-    done
-
-    # Fallback seguro
-    if [ -z "$detected_host" ]; then
-        if [ -d "$REPO_DIR/hosts/casa" ]; then
-            detected_host="casa"
-        elif [ ${#available_hosts[@]} -gt 0 ]; then
-            detected_host="${available_hosts[0]}"
-        else
-            detected_host="casa"
-        fi
-    fi
-
-    echo "$detected_host"
-}
-
-# Extrai a lista de partições e sistemas de arquivos do hardware-configuration.nix
+# Extrai a lista de partições e sistemas de arquivos do hardware-configuration.nix local
 parse_host_disks() {
-    local host="$1"
-    local hw_file="$REPO_DIR/hosts/$host/hardware-configuration.nix"
+    local hw_file="$REPO_DIR/hardware-configuration.nix"
+    if [ ! -f "$hw_file" ] && [ -f "/etc/nixos/hardware-configuration.nix" ]; then
+        hw_file="/etc/nixos/hardware-configuration.nix"
+    fi
     [ ! -f "$hw_file" ] && return 0
 
     awk '
@@ -515,25 +448,42 @@ show_preflight_audit() {
     local branch
     branch=$(git -C "$REPO_DIR" branch --show-current 2>/dev/null || echo "main")
 
-    local hw_file="$REPO_DIR/hosts/$host/hardware-configuration.nix"
-    local def_file="$REPO_DIR/hosts/$host/default.nix"
+    local hw_file="$REPO_DIR/hardware-configuration.nix"
+    local local_file="$REPO_DIR/local-config.nix"
 
-    local host_gpu
-    host_gpu=$(grep -E "myHardware\.gpu\.type" "$def_file" "$hw_file" 2>/dev/null | sed -E "s/.*\"([^\"]+)\".*/\1/" | head -n1 || echo "auto")
+    local host_gpu=""
+    if [ -f "$local_file" ]; then
+        host_gpu=$(grep -E "myHardware\.gpu\.type" "$local_file" 2>/dev/null | sed -E "s/.*\"([^\"]+)\".*/\1/" | head -n1 || echo "")
+    fi
+    if [ -z "$host_gpu" ] || [ "$host_gpu" = "auto" ]; then
+        if lspci 2>/dev/null | grep -iq "nvidia"; then
+            host_gpu="nvidia (detectado)"
+        elif lspci 2>/dev/null | grep -iE "vga|3d" | grep -iq "intel"; then
+            host_gpu="intel (detectado)"
+        elif lspci 2>/dev/null | grep -iE "vga|3d" | grep -iq "amd\|radeon"; then
+            host_gpu="amd (detectado)"
+        else
+            host_gpu="none"
+        fi
+    fi
 
     local host_cpu="Genérico"
-    if grep -Eq "hardware\.cpu\.intel|kvm-intel" "$hw_file" 2>/dev/null; then
+    if grep -Eq "hardware\.cpu\.intel|kvm-intel" "$hw_file" 2>/dev/null || grep -iq "intel" /proc/cpuinfo 2>/dev/null; then
         host_cpu="Intel (kvm-intel)"
-    elif grep -Eq "hardware\.cpu\.amd|kvm-amd" "$hw_file" 2>/dev/null; then
+    elif grep -Eq "hardware\.cpu\.amd|kvm-amd" "$hw_file" 2>/dev/null || grep -iq "amd" /proc/cpuinfo 2>/dev/null; then
         host_cpu="AMD (kvm-amd)"
     fi
 
-    local target_hn
-    target_hn=$(grep -E "networking\.hostName" "$def_file" 2>/dev/null | sed -E "s/.*\"([^\"]+)\".*/\1/" | head -n1 || echo "$host")
+    local target_hn="$current_hn"
+    if [ -f "$local_file" ]; then
+        local found_hn
+        found_hn=$(grep -E "networking\.hostName" "$local_file" 2>/dev/null | sed -E "s/.*\"([^\"]+)\".*/\1/" | head -n1 || echo "")
+        [ -n "$found_hn" ] && target_hn="$found_hn"
+    fi
 
     # Coleta lista de discos configurados
     local disks_raw
-    disks_raw=$(parse_host_disks "$host")
+    disks_raw=$(parse_host_disks)
 
     local total_disks=0
     local matched_disks=0
@@ -542,11 +492,11 @@ show_preflight_audit() {
     echo -e "${C_BORDER}╭─────────────────────────────────────────────────────────────────────────────╮${C_RESET}"
     echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_YELLOW}🔍 AUDITORIA DE CONFIGURAÇÃO & CONFIRMAÇÃO PRÉVIA${C_RESET}                          ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
-    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🎯 Perfil Selecionado :${C_RESET} ${C_BOLD}${C_GREEN}%-20s${C_RESET} ${C_MUTED}🏷️ Hostname Destino:${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$host" "$target_hn"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🎯 Sistema WillOS     :${C_RESET} ${C_BOLD}${C_GREEN}%-20s${C_RESET} ${C_MUTED}🏷️ Hostname Destino:${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "willos" "$target_hn"
     printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Hostname Atual     :${C_RESET} ${C_YELLOW}%-20s${C_RESET} ${C_MUTED}🌿 Branch Git      :${C_RESET} ${C_BLUE}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$current_hn" "$branch"
-    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🧠 CPU do Perfil      :${C_RESET} ${C_CYAN}%-20s${C_RESET} ${C_MUTED}🎮 Driver GPU      :${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$host_cpu" "$host_gpu"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🧠 CPU Identificada   :${C_RESET} ${C_CYAN}%-20s${C_RESET} ${C_MUTED}🎮 Driver GPU      :${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$host_cpu" "$host_gpu"
     echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_CYAN}💽 DISCOS & PARTIÇÕES MAPEADAS NO PERFIL [${host}]:${C_RESET}                        ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_CYAN}💽 DISCOS & PARTIÇÕES MAPEADAS NO HARDWARE LOCAL:${C_RESET}                           ${C_BORDER}│${C_RESET}"
 
     if [ -z "$disks_raw" ]; then
         echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Nenhuma partição explícita encontrada em hardware-configuration.nix${C_RESET}       ${C_BORDER}│${C_RESET}"
@@ -618,19 +568,19 @@ show_preflight_audit() {
     echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────────────────────╯${C_RESET}"
 
     if [ "$missing_disks" -gt 0 ]; then
-        echo -e "${C_RED}${C_BOLD}⚠️  ALERTA DE SEGURANÇA:${C_RESET} ${C_YELLOW}${missing_disks} disco(s)/partição(ões) do perfil '${host}' NÃO foram encontrados nesta máquina!${C_RESET}"
-        echo -e "${C_MUTED}    Certifique-se de que você está aplicando a configuração no computador correto.${C_RESET}\n"
+        echo -e "${C_RED}${C_BOLD}⚠️  ALERTA DE SEGURANÇA:${C_RESET} ${C_YELLOW}${missing_disks} disco(s)/partição(ões) do hardware local NÃO foram encontrados!${C_RESET}"
+        echo -e "${C_MUTED}    Verifique o seu hardware-configuration.nix antes de continuar.${C_RESET}\n"
     else
         echo -e "${C_GREEN}${C_BOLD}✔  COMPATIBILIDADE CONFIRMADA:${C_RESET} ${C_MUTED}Todos os ${matched_disks} discos/mappers deste perfil correspondem a este hardware.${C_RESET}\n"
     fi
 }
 
-# Diálogo interativo de confirmação e troca de host
+# Diálogo interativo de confirmação pré-rebuild
 interactive_preflight_confirm() {
     while true; do
         show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
 
-        local prompt_msg="${C_BOLD}${C_CYAN}Deseja prosseguir com o rebuild do perfil [${C_GREEN}${target_host}${C_CYAN}]?${C_RESET} [${C_GREEN}S${C_RESET}/n/t (trocar perfil)]: "
+        local prompt_msg="${C_BOLD}${C_CYAN}Deseja prosseguir com o rebuild do WillOS?${C_RESET} [${C_GREEN}S${C_RESET}/n]: "
         echo -ne "$prompt_msg"
         local user_input=""
         read -r user_input || true
@@ -639,46 +589,11 @@ interactive_preflight_confirm() {
         if [ -z "$user_input" ] || [ "$user_input" = "s" ] || [ "$user_input" = "sim" ] || [ "$user_input" = "y" ] || [ "$user_input" = "yes" ]; then
             echo ""
             return 0
-        elif [ "$user_input" = "t" ] || [ "$user_input" = "trocar" ] || [ "$user_input" = "perfil" ]; then
-            echo ""
-            echo -e "${C_BORDER}╭─[ ${C_CYAN}🎯${C_BORDER} ] ${C_BOLD}${C_CYAN}Selecione o perfil de máquina desejado:${C_RESET}"
-            local hosts_list=()
-            read -r -a hosts_list <<< "$(get_available_hosts)"
-            local idx=1
-            for h in "${hosts_list[@]}"; do
-                if [ "$h" = "$target_host" ]; then
-                    echo -e "${C_BORDER}│  ${C_GREEN}[${idx}] ${h} (Atual Selecionado)${C_RESET}"
-                else
-                    echo -e "${C_BORDER}│  ${C_MUTED}[${idx}] ${h}${C_RESET}"
-                fi
-                ((idx++)) || true
-            done
-            echo -e "${C_BORDER}│  ${C_RED}[0] Cancelar operação${C_RESET}"
-            echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────${C_RESET}"
-            echo -ne "${C_BOLD}${C_YELLOW}Digite o número ou nome do perfil: ${C_RESET}"
-            local choice=""
-            read -r choice || true
-            choice=$(echo "$choice" | xargs)
-
-            if [ "$choice" = "0" ] || [ "$choice" = "cancelar" ]; then
-                echo -e "\n${C_RED}✖ Rebuild cancelado pelo operador.${C_RESET}\n"
-                exit 0
-            elif [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#hosts_list[@]}" ]; then
-                target_host="${hosts_list[$((choice - 1))]}"
-                print_header
-            elif [ -d "$REPO_DIR/hosts/$choice" ]; then
-                target_host="$choice"
-                print_header
-            else
-                echo -e "${C_RED}Opção inválida.${C_RESET}\n"
-                sleep 1
-                print_header
-            fi
         elif [ "$user_input" = "n" ] || [ "$user_input" = "nao" ] || [ "$user_input" = "não" ] || [ "$user_input" = "no" ] || [ "$user_input" = "cancel" ]; then
             echo -e "\n${C_RED}✖ Rebuild cancelado pelo operador. Nenhuma modificação foi aplicada.${C_RESET}\n"
             exit 0
         else
-            echo -e "\n${C_RED}Opção não reconhecida. Responda 's' para confirmar, 'n' para cancelar ou 't' para trocar perfil.${C_RESET}\n"
+            echo -e "\n${C_RED}Opção não reconhecida. Responda 's' para confirmar ou 'n' para cancelar.${C_RESET}\n"
             sleep 1.5
             print_header
         fi
@@ -787,11 +702,11 @@ main() {
     # Exibe o cabeçalho dinâmico
     print_header
 
-    # Identificação inteligente ou personalizada do perfil de Host
-    local target_host="$custom_host"
-    if [ -z "$target_host" ]; then
-        target_host=$(detect_host_profile)
-    fi
+    # Garante que os arquivos locais de hardware estão prontos
+    ensure_local_hardware_ready
+
+    # Configuração do alvo do Flake (padrão: willos)
+    local target_host="${custom_host:-willos}"
 
     # Se modo dry-run / info solicitado, apenas exibe a auditoria e encerra
     if [ "$dry_run" = true ]; then
