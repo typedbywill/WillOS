@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #  ⚡ WILLOS - UNIVERSAL SETUP & INSTALLATION ENGINE ⚡
-#  Protocolo de Inicialização e Instalação Automatizada J.A.R.V.I.S.
+#  Motor de Inicialização e Instalação Automatizada WillOS
 # ==============================================================================
 
 set -eo pipefail
@@ -81,16 +81,16 @@ send_notify() {
     local title="$2"
     local body="$3"
     if command -v notify-send >/dev/null 2>&1; then
-        notify-send -u "$urgency" -a "J.A.R.V.I.S. Setup Core" -i "system-software-update" "$title" "$body" 2>/dev/null || true
+        notify-send -u "$urgency" -a "WillOS Setup Engine" -i "system-software-update" "$title" "$body" 2>/dev/null || true
     fi
 }
 
 # ------------------------------------------------------------------------------
-# 🤖 DIÁLOGO & INTERFACE J.A.R.V.I.S.
+# ❄️ DIÁLOGO & INTERFACE WILLOS
 # ------------------------------------------------------------------------------
-jarvis_speak() {
+willos_speak() {
     local text="$1"
-    echo -e "${C_BORDER}│  ${C_BOLD}${C_CYAN}🤖 [J.A.R.V.I.S.]:${C_RESET} ${C_ITALIC}\"${text}\"${C_RESET}"
+    echo -e "${C_BORDER}│  ${C_BOLD}${C_CYAN}❄️  [WillOS]:${C_RESET} ${C_ITALIC}\"${text}\"${C_RESET}"
 }
 
 print_step_header() {
@@ -142,7 +142,7 @@ run_lspci() {
 }
 
 # ------------------------------------------------------------------------------
-# 💻 CABEÇALHO CYBERPUNK & TELEMETRIA J.A.R.V.I.S.
+# 💻 CABEÇALHO CYBERPUNK & TELEMETRIA WILLOS
 # ------------------------------------------------------------------------------
 print_header() {
     local host_name
@@ -169,8 +169,8 @@ print_header() {
     echo -e "${C_BORDER}│${C_RESET}              ${C_CYAN}╚███╔███╔╝██║███████╗███████╗╚██████╔╝███████║${C_RESET}                 ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}│${C_RESET}               ${C_CYAN}╚══╝╚══╝ ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚══════╝${C_RESET}                 ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}│${C_RESET}                                                                             ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}     ${C_BOLD}${C_BLUE}🤖  J . A . R . V . I . S .   O S   D E P L O Y M E N T   C O R E  🤖${C_RESET}     ${C_BORDER}│${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}       ${C_BOLD}${C_CYAN}⚡  W I L L O S   U N I V E R S A L   I N S T A L L E R   v 2 . 0  ⚡${C_RESET}       ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}     ${C_BOLD}${C_BLUE}⚡  W I L L O S   S Y S T E M   C O R E   D E P L O Y M E N T  ⚡${C_RESET}     ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}       ${C_BOLD}${C_CYAN}❄️  W I L L O S   U N I V E R S A L   I N S T A L L E R   v 2 . 0  ❄️${C_RESET}       ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
     printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Host:${C_RESET}     ${C_BOLD}%-15s${C_RESET} ${C_MUTED}🐧 Kernel:${C_RESET} ${C_CYAN}%-15s${C_RESET}  ${C_MUTED}🏷️  Geração:${C_RESET}   ${C_YELLOW}#%-9s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$host_name" "$kernel_ver" "$current_gen"
     printf "${C_BORDER}│${C_RESET}  ${C_MUTED}👤 Operador:${C_RESET} ${C_GREEN}%-15s${C_RESET} ${C_MUTED}📅 Data:${C_RESET}   ${C_MUTED}%-15s${C_RESET}  ${C_MUTED}🌐 Protocolo:${C_RESET} ${C_MAGENTA}%-11s${C_RESET} ${C_BORDER}│${C_RESET}\n" "${USER:-william}" "$now_str" "Nix Flakes"
@@ -268,7 +268,7 @@ run_with_dynamic_hud() {
 
         if [ "$is_interactive" = true ]; then
             printf "\r\033[K${C_BORDER}│  ${color}${frame}${C_RESET} ${C_BOLD}${C_CYAN}%-38s${C_RESET} ${C_MUTED}⏱️  %02dm %02ds${C_RESET}\n" "$title" "$min" "$sec"
-            printf "\r\033[K${C_BORDER}│  ${C_BORDER}├─ [${C_CYAN}%s${C_BORDER}] ${C_YELLOW}J.A.R.V.I.S. EM AÇÃO${C_RESET}\n" "$bar"
+            printf "\r\033[K${C_BORDER}│  ${C_BORDER}├─ [${C_CYAN}%s${C_BORDER}] ${C_YELLOW}WillOS EM AÇÃO${C_RESET}\n" "$bar"
             printf "\r\033[K${C_BORDER}│  ${C_BORDER}└─ ${C_MUTED}Status:${C_RESET} ${C_MUTED}%-55s${C_RESET}\033[2A" "$status_line"
         fi
 
@@ -297,9 +297,9 @@ run_with_dynamic_hud() {
         return 0
     else
         printf "\r\033[K${C_BORDER}│  ${C_RED}✖${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_RED}falhou após %02dm %02ds (Código: ${exit_code})!${C_RESET}\n\n" "$min_tot" "$sec_tot"
-        echo -e "${C_RED}─────── [ RELATÓRIO DE ERRO J.A.R.V.I.S. ] ───────${C_RESET}"
+        echo -e "${C_RED}─────── [ RELATÓRIO DE ERRO WILLOS ] ───────${C_RESET}"
         tail -n 35 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
-        echo -e "${C_RED}───────────────────────────────────────────────────${C_RESET}\n"
+        echo -e "${C_RED}────────────────────────────────────────────${C_RESET}\n"
         rm -f "$logfile"
         return "$exit_code"
     fi
@@ -530,7 +530,7 @@ check_single_disk_status() {
 }
 
 # ------------------------------------------------------------------------------
-# 📊 PAINEL DE AUDITORIA & CONFIRMAÇÃO PRÉ-INSTALAÇÃO J.A.R.V.I.S.
+# 📊 PAINEL DE AUDITORIA & CONFIRMAÇÃO PRÉ-INSTALAÇÃO WILLOS
 # ------------------------------------------------------------------------------
 show_preflight_audit() {
     local target_host="$1"
@@ -556,7 +556,7 @@ show_preflight_audit() {
     fi
 
     echo -e "${C_BORDER}╭─────────────────────────────────────────────────────────────────────────────╮${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_CYAN}🤖 DIAGNÓSTICO J.A.R.V.I.S. & AUDITORIA DE INSTALAÇÃO DO WILLOS${C_RESET}            ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_CYAN}🔍 DIAGNÓSTICO DO SISTEMA & AUDITORIA DE INSTALAÇÃO DO WILLOS${C_RESET}             ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
     printf "${C_BORDER}│${C_RESET}  ${C_MUTED}🎯 Sistema Alvo       :${C_RESET} ${C_BOLD}${C_GREEN}%-20s${C_RESET} ${C_MUTED}🏷️ Hostname Destino:${C_RESET} ${C_CYAN}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "willos" "$target_host"
     printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Hostname Atual     :${C_RESET} ${C_YELLOW}%-20s${C_RESET} ${C_MUTED}📁 Pasta Destino   :${C_RESET} ${C_BLUE}%-14s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$current_hn" "$target_dir_short"
@@ -608,7 +608,7 @@ show_preflight_audit() {
     fi
 
     echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
-    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_CYAN}⚡ PLANO DE AÇÃO J.A.R.V.I.S.:${C_RESET}                                             ${C_BORDER}│${C_RESET}"
+    echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_CYAN}⚡ PLANO DE AÇÃO & PROCEDIMENTOS DO WILLOS:${C_RESET}                                ${C_BORDER}│${C_RESET}"
     printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Repositório Central:${C_RESET} %-54s ${C_BORDER}│${C_RESET}\n" "$REPO_URL"
     printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Destino do Código  :${C_RESET} %-54s ${C_BORDER}│${C_RESET}\n" "$target_dir"
     printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Modo de Aplicação  :${C_RESET} ${C_BOLD}${C_YELLOW}%-54s${C_RESET} ${C_BORDER}│${C_RESET}\n" "nixos-rebuild $action (switch imediato com Hyprland)"
@@ -625,7 +625,7 @@ interactive_preflight_confirm() {
     while true; do
         show_preflight_audit "$target_host" "$target_gpu" "$target_dir" "$action"
 
-        jarvis_speak "Chefe, todos os parâmetros foram calibrados. Posso iniciar a instalação do WillOS?"
+        willos_speak "Todos os parâmetros do hardware foram calibrados. Deseja iniciar a instalação do WillOS agora?"
         echo ""
         local prompt_msg="${C_BOLD}${C_CYAN}Deseja prosseguir com a instalação do WillOS?${C_RESET} [${C_GREEN}S${C_RESET}/n]: "
         echo -ne "$prompt_msg"
@@ -642,7 +642,7 @@ interactive_preflight_confirm() {
             echo ""
             return 0
         elif [ "$user_input" = "n" ] || [ "$user_input" = "nao" ] || [ "$user_input" = "não" ] || [ "$user_input" = "no" ] || [ "$user_input" = "cancel" ]; then
-            echo -e "\n${C_RED}✖ Instalação abortada pelo operador. Nenhum subsistema foi modificado.${C_RESET}\n"
+            echo -e "\n${C_RED}✖ Instalação cancelada pelo operador. Nenhum subsistema foi modificado.${C_RESET}\n"
             exit 0
         else
             echo -e "\n${C_RED}Opção não reconhecida. Digite 's' para confirmar ou 'n' para cancelar.${C_RESET}\n"
@@ -653,7 +653,7 @@ interactive_preflight_confirm() {
 }
 
 # ------------------------------------------------------------------------------
-# 📖 CENTRAL DE AJUDA J.A.R.V.I.S.
+# 📖 CENTRAL DE AJUDA DO WILLOS
 # ------------------------------------------------------------------------------
 print_help() {
     print_header
@@ -670,10 +670,10 @@ print_help() {
     echo -e "  ${C_GREEN}--boot${C_RESET}                 Apenas adiciona a nova geração ao bootloader sem switch imediato"
     echo -e "  ${C_GREEN}--test${C_RESET}                 Testa a configuração temporariamente sem torná-la padrão"
     echo -e "  ${C_GREEN}--show-trace${C_RESET}           Exibe o trace detalhado em caso de erro na compilação Nix"
-    echo -e "  ${C_GREEN}-h, --help${C_RESET}             Exibe esta central de ajuda J.A.R.V.I.S."
+    echo -e "  ${C_GREEN}-h, --help${C_RESET}             Exibe esta central de ajuda do WillOS"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}EXEMPLOS:${C_RESET}"
-    echo -e "  ${C_MUTED}# Instalação padrão interativa assistida por J.A.R.V.I.S.:${C_RESET}"
+    echo -e "  ${C_MUTED}# Instalação padrão interativa assistida pelo WillOS:${C_RESET}"
     echo -e "  ${C_CYAN}./scripts/setup.sh${C_RESET}"
     echo ""
     echo -e "${C_MUTED}# Instalação automatizada direta sem confirmações:${C_RESET}"
@@ -737,6 +737,9 @@ main() {
                 shift
                 custom_gpu="$1"
                 ;;
+            --gpu=*)
+                custom_gpu="${1#*=}"
+                ;;
             -u|--upgrade)
                 # Flag de compatibilidade para atualização
                 ;;
@@ -780,7 +783,7 @@ main() {
     # Se modo dry-run solicitado
     if [ "$dry_run" = true ]; then
         show_preflight_audit "$target_hn" "$target_gpu" "$TARGET_DIR" "$action"
-        jarvis_speak "Modo de auditoria concluído. Nenhum arquivo foi alterado, Chefe."
+        willos_speak "Modo de auditoria concluído. Nenhum arquivo foi alterado no sistema."
         exit 0
     fi
 
@@ -795,7 +798,7 @@ main() {
     # FASE 1: DIAGNÓSTICO DO HOST & SENSORES DE AMBIENTE
     # ==========================================================================
     print_step_header "1" "$total_steps" "🛰️" "Diagnóstico do Host & Sensores de Ambiente"
-    jarvis_speak "Verificando permissões de segurança e integridade das ferramentas básicas..."
+    willos_speak "Verificando permissões de segurança e integridade das ferramentas básicas..."
 
     # Validação antecipada de SUDO
     if ! sudo -n true 2>/dev/null; then
@@ -829,7 +832,7 @@ main() {
     # FASE 2: DOWNLOAD & SINCRONIZAÇÃO DO REPOSITÓRIO WILLOS
     # ==========================================================================
     print_step_header "2" "$total_steps" "📦" "Download & Sincronização do Núcleo WillOS"
-    jarvis_speak "Conectando ao repositório central e estabelecendo cópia local em ${TARGET_DIR}..."
+    willos_speak "Conectando ao repositório central e estabelecendo cópia local em ${TARGET_DIR}..."
 
     mkdir -p "$(dirname "$TARGET_DIR")"
 
@@ -859,7 +862,7 @@ main() {
     # FASE 3: MAPEAMENTO DE HARDWARE & DISCOS LOCAIS
     # ==========================================================================
     print_step_header "3" "$total_steps" "⚙️" "Mapeamento de Hardware & Discos Locais"
-    jarvis_speak "Escaneando barramentos PCI, tabelas de partição e layout do hardware..."
+    willos_speak "Escaneando barramentos PCI, tabelas de partição e layout do hardware..."
 
     local hw_target="$TARGET_DIR/hardware-configuration.nix"
     if [ ! -f "$hw_target" ]; then
@@ -889,14 +892,14 @@ main() {
     # FASE 4: SÍNTESE DA MATRIZ DE CONFIGURAÇÃO LOCAL
     # ==========================================================================
     print_step_header "4" "$total_steps" "🧠" "Síntese da Matriz de Configuração Local"
-    jarvis_speak "Configurando módulos de GPU (${target_gpu}) e identidade de rede (${target_hn})..."
+    willos_speak "Configurando módulos de GPU (${target_gpu}) e identidade de rede (${target_hn})..."
 
     local local_target="$TARGET_DIR/local-config.nix"
     if [ ! -f "$local_target" ] || [ -n "$custom_gpu" ] || [ -n "$custom_hostname" ]; then
         cat <<EOF > "$local_target"
 # ==============================================================================
 # 🛠️ WillOS - Configuração Local da Máquina
-# Gerado e calibrado automaticamente pelo assistente J.A.R.V.I.S.
+# Gerado e calibrado automaticamente pelo assistente WillOS
 # ==============================================================================
 { lib, ... }:
 
@@ -919,7 +922,7 @@ EOF
     # FASE 5: COMPILAÇÃO & ATIVAÇÃO DO SISTEMA WILLOS
     # ==========================================================================
     print_step_header "5" "$total_steps" "⚡" "Compilação & Ativação do Sistema WillOS"
-    jarvis_speak "Engajando motor de compilação NixOS Flake. Construindo ambiente completo..."
+    willos_speak "Engajando motor de compilação NixOS Flake. Construindo ambiente completo..."
 
     # Limpeza preventiva de possíveis unidades de rebuild bloqueadas
     if sudo systemctl is-active --quiet nixos-rebuild-switch-to-configuration.service 2>/dev/null; then
@@ -949,7 +952,7 @@ EOF
         echo -e "${C_RED}║  ❌  FALHA NA INICIALIZAÇÃO DO WILLOS                                       ║${C_RESET}"
         echo -e "${C_RED}╠═════════════════════════════════════════════════════════════════════════════╣${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  ⚠️  Ocorreu um erro durante a compilação ou ativação da configuração.      ${C_RED}║${C_RESET}"
-        echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica J.A.R.V.I.S.:${C_RESET} Execute com '${C_BOLD}--show-trace${C_RESET}' para inspecionar o erro.     ${C_RED}║${C_RESET}"
+        echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica WillOS:${C_RESET} Execute com '${C_BOLD}--show-trace${C_RESET}' para inspecionar o erro completo.  ${C_RED}║${C_RESET}"
         echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
         exit 1
     fi
@@ -960,7 +963,7 @@ EOF
     # FASE 6: CALIBRAÇÃO DE AMBIENTE & INTEGRAÇÃO CAELESTIA
     # ==========================================================================
     print_step_header "6" "$total_steps" "🚀" "Calibração de Ambiente & Integração Caelestia"
-    jarvis_speak "Calibrando integração com o desktop, paleta Caelestia e atalhos de controle..."
+    willos_speak "Calibrando integração com o desktop, paleta Caelestia e atalhos de controle..."
 
     # Garante isolamento Git
     run_git -C "$TARGET_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
@@ -978,7 +981,7 @@ EOF
     print_step_done "Todos os subsistemas calibrados e prontos para uso."
 
     # ==========================================================================
-    # 🏆 DASHBOARD RESUMO J.A.R.V.I.S.
+    # 🏆 DASHBOARD RESUMO DO WILLOS
     # ==========================================================================
     local global_end_time
     global_end_time=$(date +%s)
@@ -1007,12 +1010,12 @@ EOF
     echo -e "${C_BORDER}║${C_RESET}  • ${C_CYAN}Super + Space${C_RESET}      : Abrir Launcher Fuzzel                               ${C_BORDER}║${C_RESET}"
     echo -e "${C_BORDER}║${C_RESET}  • ${C_CYAN}Super + E${C_RESET}          : Abrir Gerenciador de Arquivos Dolphin               ${C_BORDER}║${C_RESET}"
     echo -e "${C_BORDER}║                                                                             ║${C_RESET}"
-    echo -e "${C_BORDER}║  ${C_BOLD}${C_CYAN}🤖 [J.A.R.V.I.S.]: Todos os sistemas operacionais, Chefe. Aproveite o WillOS!${C_RESET} ${C_BORDER}║${C_RESET}"
+    echo -e "${C_BORDER}║  ${C_BOLD}${C_CYAN}❄️  [WillOS]: Todos os sistemas operacionais e calibrados. Bom trabalho!${C_RESET}      ${C_BORDER}║${C_RESET}"
     echo -e "${C_BORDER}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
 
     # Efeitos sonoros e notificação
     play_sound "success"
-    send_notify "normal" "🚀 WillOS Instalado com Sucesso!" "Geração #${current_gen} ativada em ${time_formatted}. J.A.R.V.I.S. pronto para uso."
+    send_notify "normal" "🚀 WillOS Instalado com Sucesso!" "Geração #${current_gen} ativada em ${time_formatted}. WillOS pronto para uso."
 }
 
 main "$@"
