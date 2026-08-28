@@ -48,8 +48,25 @@ fi
 SUDO_PID=""
 
 # ------------------------------------------------------------------------------
-# 🛡️ LIMPEZA E TRAPS (Ctrl+C)
+# 🛡️ LIMPEZA E TRAPS (Ctrl+C / EXIT / ERR)
 # ------------------------------------------------------------------------------
+error_handler() {
+    local exit_code=$?
+    local line_no=$1
+    local cmd="$2"
+    if [ "$exit_code" -ne 0 ]; then
+        echo -e "\n${C_BORDER}╭─────────────────────────────────────────────────────────────────────────────╮${C_RESET}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_BOLD}${C_RED}❌ ERRO INESPERADO NA EXECUÇÃO DO SCRIPT${C_RESET}                                   ${C_BORDER}│${C_RESET}"
+        echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Arquivo :${C_RESET} ${BASH_SOURCE[1]:-$0}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Linha   :${C_RESET} ${line_no}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Comando :${C_RESET} ${C_YELLOW}${cmd}${C_RESET}"
+        echo -e "${C_BORDER}│${C_RESET}  ${C_MUTED}Código  :${C_RESET} ${C_RED}${exit_code}${C_RESET}"
+        echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────────────────────╯\n"
+    fi
+}
+trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
+
 cleanup() {
     tput cnorm 2>/dev/null || printf "\033[?25h" 2>/dev/null || true
     if [ -n "$SUDO_PID" ]; then
@@ -255,10 +272,30 @@ run_with_dynamic_hud() {
         rm -f "$logfile"
         return 0
     else
+        local persistent_log="/tmp/willos-rebuild.log"
+        cp "$logfile" "$persistent_log" 2>/dev/null || true
+
         printf "\r\033[K${C_BORDER}│  ${C_RED}✖${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_RED}falhou após %02dm %02ds (Código: ${exit_code})!${C_RESET}\n\n" "$min_tot" "$sec_tot"
-        echo -e "${C_RED}─────── [ LOG DE ERRO DETALHADO ] ───────${C_RESET}"
-        tail -n 35 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
-        echo -e "${C_RED}─────────────────────────────────────────${C_RESET}\n"
+
+        local total_lines
+        total_lines=$(wc -l < "$logfile" 2>/dev/null || echo "0")
+
+        echo -e "${C_RED}╔═════════════════════════════════════════════════════════════════════════════╗${C_RESET}"
+        echo -e "${C_RED}║  ❌  RELATÓRIO DE ERRO DETALHADO DO WILLOS REBUILD                          ║${C_RESET}"
+        echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}"
+
+        if [ "$total_lines" -le 100 ]; then
+            cat "$logfile" 2>/dev/null || echo "Nenhum log gravado."
+        else
+            echo -e "${C_YELLOW}⚠️  Log extenso (${total_lines} linhas). Exibindo as últimas 60 linhas de saída:${C_RESET}\n"
+            tail -n 60 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
+        fi
+
+        echo -e "\n${C_RED}─────────────────────────────────────────────────────────────────────────────${C_RESET}"
+        echo -e "${C_CYAN}📄 Log completo gravado em:${C_RESET} ${C_BOLD}${C_YELLOW}${persistent_log}${C_RESET}"
+        echo -e "${C_MUTED}🔍 Para ver todo o log:${C_RESET}     ${C_BOLD}cat ${persistent_log}${C_RESET}  ${C_MUTED}ou${C_RESET}  ${C_BOLD}less ${persistent_log}${C_RESET}"
+        echo -e "${C_RED}─────────────────────────────────────────────────────────────────────────────${C_RESET}\n"
+
         rm -f "$logfile"
         return "$exit_code"
     fi
@@ -891,7 +928,9 @@ main() {
         echo -e "${C_RED}╠═════════════════════════════════════════════════════════════════════════════╣${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  ⚠️  Ocorreu um erro durante a compilação ou ativação da configuração.      ${C_RED}║${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  🛡️  A geração anterior (${C_YELLOW}#${old_gen_num}${C_RESET}) permanece 100% segura e ativa.          ${C_RED}║${C_RESET}"
+        echo -e "${C_RED}║${C_RESET}  📄  Log completo gravado em: ${C_BOLD}${C_YELLOW}/tmp/willos-rebuild.log${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica:${C_RESET} Execute '${C_BOLD}rebuild --show-trace${C_RESET}' para inspecionar o erro completo.   ${C_RED}║${C_RESET}"
+        echo -e "${C_RED}║${C_RESET}  🔍  Para ver o log: '${C_BOLD}cat /tmp/willos-rebuild.log${C_RESET}'                            ${C_RED}║${C_RESET}"
         echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
         exit 1
     fi
