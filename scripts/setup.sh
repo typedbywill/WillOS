@@ -414,6 +414,32 @@ detect_ram_info() {
     echo "16 GB RAM"
 }
 
+detect_disk_space_info() {
+    local target_check="${1:-/}"
+    if command -v df >/dev/null 2>&1; then
+        local df_out
+        df_out=$(df -h "$target_check" 2>/dev/null | awk 'NR==2 {print $4 " livres de " $2}' || echo "")
+        if [ -n "$df_out" ]; then
+            echo "$df_out"
+            return 0
+        fi
+    fi
+    echo "Espaço não determinado"
+}
+
+detect_free_disk_gb() {
+    local target_check="${1:-/}"
+    if command -v df >/dev/null 2>&1; then
+        local avail_kb
+        avail_kb=$(df -k "$target_check" 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
+        if [ "$avail_kb" -gt 0 ] 2>/dev/null; then
+            echo $(( avail_kb / 1048576 ))
+            return 0
+        fi
+    fi
+    echo "999"
+}
+
 parse_host_disks() {
     local hw_file="$TARGET_DIR/hardware-configuration.nix"
     if [ ! -f "$hw_file" ] && [ -f "/etc/nixos/hardware-configuration.nix" ]; then
@@ -866,6 +892,16 @@ main() {
         print_substep "⚡" "Git Engine: ${C_CYAN}Ambiente sob demanda via nix-shell pronto para uso${C_RESET}"
     fi
 
+    local free_disk_gb
+    free_disk_gb=$(detect_free_disk_gb "/")
+    local disk_info_str
+    disk_info_str=$(detect_disk_space_info "/")
+    if [ "$free_disk_gb" -lt 15 ]; then
+        print_substep "⚠️" "${C_YELLOW}Aviso de Espaço em Disco:${C_RESET} ${disk_info_str}. ${C_YELLOW}(Recomendado: min. 20GB livres)${C_RESET}"
+    else
+        print_substep "💽" "Espaço em Disco (/): ${C_GREEN}${disk_info_str}${C_RESET}"
+    fi
+
     print_step_done "Diagnóstico inicial de sensores aprovado."
 
     # ==========================================================================
@@ -1018,6 +1054,14 @@ EOF
         echo -e "${C_RED}║${C_RESET}  📄  Log completo gravado em: ${C_BOLD}${C_YELLOW}/tmp/willos-setup.log${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica WillOS:${C_RESET} Execute com '${C_BOLD}--show-trace${C_RESET}' para inspecionar o erro completo.  ${C_RED}║${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  🔍  Para ver o log: '${C_BOLD}cat /tmp/willos-setup.log${C_RESET}'                              ${C_RED}║${C_RESET}"
+        local free_gb_fail
+        free_gb_fail=$(detect_free_disk_gb "/")
+        if [ "$free_gb_fail" -lt 12 ]; then
+            echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}  💾  ${C_BOLD}${C_YELLOW}ALERTA DE DISCO:${C_RESET} Restam apenas ${C_BOLD}${C_RED}${free_gb_fail}GB${C_RESET} livres na partição raiz (/).       ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}A compilação do NixOS frequentemente falha por falta de espaço.${C_RESET}        ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      💡 Limpe o cache com '${C_BOLD}nix-collect-garbage -d${C_RESET}' ou aumente o disco.     ${C_RED}║${C_RESET}"
+        fi
         echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
         exit 1
     fi
