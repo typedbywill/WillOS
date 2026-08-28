@@ -8,13 +8,22 @@ echo "========================================="
 echo "❄️  WillOS - Setup & Restore Script"
 echo "========================================="
 
+# Helper para executar comandos git mesmo se o git não estiver instalado no sistema base
+run_git() {
+    if command -v git >/dev/null 2>&1; then
+        git "$@"
+    else
+        nix-shell -p git --run "git $(printf '%q ' "$@")"
+    fi
+}
+
 # 1. Clonar ou atualizar o repositório
 if [ -d "$TARGET_DIR/.git" ]; then
     echo "📦 Repositório já existe em $TARGET_DIR. Atualizando..."
-    git -C "$TARGET_DIR" pull --ff-only origin main 2>/dev/null || echo "ℹ️  Usando versão local existente do repositório."
+    run_git -C "$TARGET_DIR" pull --ff-only origin main 2>/dev/null || echo "ℹ️  Usando versão local existente do repositório."
 else
     echo "📥 Clonando repositório de $REPO_URL para $TARGET_DIR..."
-    git clone "$REPO_URL" "$TARGET_DIR"
+    run_git clone "$REPO_URL" "$TARGET_DIR"
 fi
 
 # 2. Determinação de Host
@@ -73,7 +82,7 @@ fi
 
 
 # 3. Adicionar arquivos ao Git (necessário para o Nix Flakes enxergar)
-git -C "$TARGET_DIR" add -A
+run_git -C "$TARGET_DIR" add -A
 
 # 4. Reconstruir e aplicar o sistema NixOS
 echo "🚀 Aplicando configuração do NixOS ($TARGET_HOST)..."

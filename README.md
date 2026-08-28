@@ -68,16 +68,38 @@ O repositório adota uma **arquitetura multi-host** em [`hosts/`](./hosts) (`hos
 
 ## 🌐 Como Instalar em Qualquer Máquina Nova (Zero Auth)
 
-Em qualquer instalação nova do NixOS conectada à internet, basta executar um único comando no terminal:
+Você pode instalar o **WillOS** diretamente sem precisar de chaves SSH ou de autenticação.
+
+### Opção 1: Direto via Flake Remoto *(Recomendado — Não requer Git)*
+
+O próprio Nix baixa e constrói tudo a partir do repositório remoto:
+
+* **Em um sistema NixOS em execução:**
+  ```bash
+  # Para o perfil Notebook:
+  sudo nixos-rebuild switch --flake github:typedbywill/myNix#notegiga
+
+  # Para o perfil Desktop:
+  sudo nixos-rebuild switch --flake github:typedbywill/myNix#casa
+  ```
+
+* **Durante uma instalação limpa via pendrive/Live ISO (`nixos-install`):**
+  ```bash
+  sudo nixos-install --flake github:typedbywill/myNix#notegiga
+  ```
+
+---
+
+### Opção 2: Script Automatizado (`setup.sh`)
+
+Se preferir que o script clone o repositório localmente em `~/nixos-hyprland-caelestia`, detecte automaticamente o hardware/perfil e aplique o sistema:
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/typedbywill/myNix/main/setup.sh)
 ```
 
-O script realizará:
-1. Clone do repositório via HTTPS público para `~/nixos-hyprland-caelestia`.
-2. Preservação/geração automática do `hardware-configuration.nix` da máquina de destino com auto-detecção de GPU.
-3. Execução do `nixos-rebuild switch` completo.
+> [!NOTE]
+> O `setup.sh` possui fallback automático via `nix-shell` e funcionará perfeitamente mesmo se a máquina ainda não tiver o `git` instalado.
 
 ---
 
