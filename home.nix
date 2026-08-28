@@ -3,6 +3,7 @@
 let
   chatgpt = pkgs.callPackage ./pkgs/chatgpt.nix {};
   winbox = pkgs.callPackage ./pkgs/winbox.nix {};
+  mysql-workbench = pkgs.callPackage ./pkgs/mysql-workbench.nix {};
 in
 {
   imports = [
