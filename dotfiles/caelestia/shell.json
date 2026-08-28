@@ -26,8 +26,8 @@
   },
   "bar": {
     "workspaces": {
-      "perMonitorWorkspaces": false,
-      "shown": 10
+      "perMonitorWorkspaces": true,
+      "shown": 5
     }
   },
   "general": {
