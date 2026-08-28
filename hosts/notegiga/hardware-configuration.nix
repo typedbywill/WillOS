@@ -19,7 +19,6 @@
     };
 
   boot.initrd.luks.devices."luks-44f45ba6-d512-4baf-a9e0-c93b93ba2972".device = "/dev/disk/by-uuid/44f45ba6-d512-4baf-a9e0-c93b93ba2972";
-  boot.initrd.luks.devices."luks-e8a8b967-3ca5-47a0-8fb4-45b5ede67f91".device = "/dev/disk/by-uuid/e8a8b967-3ca5-47a0-8fb4-45b5ede67f91";
 
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/C167-2CF2";
@@ -27,9 +26,7 @@
       options = [ "fmask=0077" "dmask=0077" ];
     };
 
-  swapDevices =
-    [ { device = "/dev/mapper/luks-e8a8b967-3ca5-47a0-8fb4-45b5ede67f91"; }
-    ];
+  swapDevices = [ ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

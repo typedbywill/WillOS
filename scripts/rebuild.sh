@@ -183,7 +183,7 @@ run_with_dynamic_hud() {
         # Analisa o arquivo de log em tempo real para exibir o status inteligente
         if [ -s "$logfile" ]; then
             local raw_last
-            raw_last=$(tail -n 1 "$logfile" 2>/dev/null | tr -d '\r\n' || echo "")
+            raw_last=$(tail -n 5 "$logfile" 2>/dev/null | grep -v '^[[:space:]]*$' | tail -n 1 | tr -d '\r\n' || echo "")
             if [[ "$raw_last" =~ building.*\.drv ]]; then
                 local drv_name
                 drv_name=$(echo "$raw_last" | sed "s/.*building '\/nix\/store\/[^-]*-//" | sed "s/\.drv'.*//" | cut -c1-35)
@@ -226,11 +226,8 @@ run_with_dynamic_hud() {
         sleep 0.08
     done
 
-    wait "$pid" 2>/dev/null || true
     local exit_code=0
-    if ! wait "$pid" 2>/dev/null; then
-        exit_code=1
-    fi
+    wait "$pid" 2>/dev/null || exit_code=$?
 
     # Restaura o cursor
     tput cnorm 2>/dev/null || printf "\033[?25h" 2>/dev/null || true
@@ -251,7 +248,7 @@ run_with_dynamic_hud() {
     else
         printf "\r\033[K${C_BORDER}│  ${C_RED}✖${C_RESET} ${C_BOLD}${title}${C_RESET} ${C_RED}falhou após %02dm %02ds (Código: ${exit_code})!${C_RESET}\n\n" "$min_tot" "$sec_tot"
         echo -e "${C_RED}─────── [ LOG DE ERRO DETALHADO ] ───────${C_RESET}"
-        tail -n 25 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
+        tail -n 35 "$logfile" 2>/dev/null || echo "Nenhum log gravado."
         echo -e "${C_RED}─────────────────────────────────────────${C_RESET}\n"
         rm -f "$logfile"
         return "$exit_code"
@@ -909,8 +906,15 @@ main() {
     # Limpeza preventiva e resolução de conflitos de unidades transientes do systemd
     if sudo systemctl is-active --quiet nixos-rebuild-switch-to-configuration.service 2>/dev/null; then
         print_substep "⏳" "${C_YELLOW}Aguardando ciclo de ativação anterior finalizar...${C_RESET}"
+        local wait_count=0
         while sudo systemctl is-active --quiet nixos-rebuild-switch-to-configuration.service 2>/dev/null; do
             sleep 1
+            ((wait_count++)) || true
+            if [ "$wait_count" -ge 6 ]; then
+                print_substep "⚠️" "${C_YELLOW}Serviço anterior bloqueado; cancelando unidade residual...${C_RESET}"
+                sudo systemctl stop nixos-rebuild-switch-to-configuration.service 2>/dev/null || true
+                break
+            fi
         done
     fi
     sudo systemctl reset-failed nixos-rebuild-switch-to-configuration.service 2>/dev/null || true
