@@ -38,7 +38,7 @@ C_BRIGHT_WHITE="\033[97m"
 # ------------------------------------------------------------------------------
 # 🌐 VARIÁVEIS GLOBAIS E AMBIENTE
 # ------------------------------------------------------------------------------
-REPO_URL="https://github.com/typedbywill/myNix.git"
+REPO_URL="https://github.com/typedbywill/WillOS.git"
 TARGET_DIR="${TARGET_DIR:-$HOME/WillOS}"
 SUDO_PID=""
 
