@@ -462,6 +462,51 @@ ensure_sufficient_memory_and_swap() {
     fi
 }
 
+ensure_boot_partition_mounted() {
+    local hw_file="$1"
+
+    if findmnt /boot >/dev/null 2>&1 || mountpoint -q /boot 2>/dev/null; then
+        print_substep "🛡️" "Partição /boot: ${C_GREEN}Montada e ativa${C_RESET}"
+        return 0
+    fi
+
+    print_substep "⚠️" "${C_YELLOW}Alerta:${C_RESET} A partição ${C_BOLD}/boot${C_RESET} não está montada."
+    print_substep "🔄" "Tentando montar /boot automaticamente..."
+
+    # Tenta montar via /etc/fstab primeiro
+    if sudo mount /boot 2>/dev/null; then
+        print_substep "✔" "${C_GREEN}/boot montado com sucesso via fstab.${C_RESET}"
+        return 0
+    fi
+
+    # Procura dispositivo do /boot em hardware-configuration.nix
+    local boot_dev=""
+    if [ -f "$hw_file" ]; then
+        boot_dev=$(awk '/fileSystems\."\/boot"/ {in_boot=1} in_boot && /device[ \t]*=[ \t]*"([^"]+)"/ {match($0, /device[ \t]*=[ \t]*"([^"]+)"/, m); print m[1]; in_boot=0}' "$hw_file" 2>/dev/null || echo "")
+    fi
+
+    if [ -n "$boot_dev" ] && [ -e "$boot_dev" ]; then
+        sudo mkdir -p /boot 2>/dev/null || true
+        if sudo mount "$boot_dev" /boot 2>/dev/null; then
+            print_substep "✔" "${C_GREEN}Partição EFI (${boot_dev}) montada em /boot com sucesso!${C_RESET}"
+            return 0
+        fi
+    fi
+
+    # Procura partições do tipo vfat/EFI no sistema
+    local efi_dev
+    efi_dev=$(lsblk -rnpo NAME,FSTYPE,MOUNTPOINT 2>/dev/null | awk '$2=="vfat" && $3=="" {print $1; exit}' || echo "")
+    if [ -n "$efi_dev" ] && [ -e "$efi_dev" ]; then
+        sudo mkdir -p /boot 2>/dev/null || true
+        if sudo mount "$efi_dev" /boot 2>/dev/null; then
+            print_substep "✔" "${C_GREEN}Partição EFI detectada (${efi_dev}) montada em /boot com sucesso!${C_RESET}"
+            return 0
+        fi
+    fi
+
+    print_substep "⚠️" "${C_YELLOW}Aviso:${C_RESET} Não foi possível montar /boot automaticamente. Se o bootloader falhar, monte a partição EFI manualmente (${C_CYAN}sudo mount /dev/sdX1 /boot${C_RESET})."
+}
+
 detect_ram_info() {
     if [ -f /proc/meminfo ]; then
         local mem_kb
@@ -1021,34 +1066,55 @@ main() {
     willos_speak "Escaneando barramentos PCI, tabelas de partição e layout do hardware..."
 
     local hw_target="$TARGET_DIR/hardware-configuration.nix"
-    if [ ! -f "$hw_target" ]; then
-        if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
-            print_substep "📋" "Importando hardware-configuration.nix de /etc/nixos/..."
-            if ! cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null; then
-                sudo cp "/etc/nixos/hardware-configuration.nix" "$hw_target" || {
-                    print_step_fail "Falha ao copiar /etc/nixos/hardware-configuration.nix."
-                    exit 1
-                }
+    local needs_generation=false
+
+    # 1. Se existir /etc/nixos/hardware-configuration.nix no host, compara e importa
+    if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
+        if [ ! -f "$hw_target" ] || ! cmp -s "/etc/nixos/hardware-configuration.nix" "$hw_target"; then
+            print_substep "📋" "Importando hardware-configuration.nix real de /etc/nixos/..."
+            if cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || sudo cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null; then
+                sudo chown "$USER:$(id -gn 2>/dev/null || echo "$USER")" "$hw_target" 2>/dev/null || true
+                print_substep "✔" "${C_GREEN}hardware-configuration.nix sincronizado com o host local.${C_RESET}"
             fi
-            print_substep "✔" "Arquivo de hardware importado com sucesso."
         else
+            print_substep "✔" "hardware-configuration.nix alinhado com o hardware desta máquina."
+        fi
+    else
+        # 2. Se não existir /etc/nixos/hardware-configuration.nix, verifica se os discos do arquivo atual existem no hardware
+        if [ -f "$hw_target" ]; then
+            local disks_raw
+            disks_raw=$(parse_host_disks)
+            local missing_count=0
+            local total_count=0
+            while IFS='|' read -r kind mount dev fstype; do
+                [ -z "$kind" ] && continue
+                ((total_count++)) || true
+                local st
+                st=$(check_single_disk_status "$kind" "$mount" "$dev" "$fstype")
+                if [ "$st" = "MISSING" ]; then
+                    ((missing_count++)) || true
+                fi
+            done <<< "$disks_raw"
+
+            if [ "$total_count" -gt 0 ] && [ "$missing_count" -ge "$total_count" ]; then
+                print_substep "⚠️" "${C_YELLOW}hardware-configuration.nix existente pertence a outro hardware (discos não encontrados).${C_RESET}"
+                needs_generation=true
+            fi
+        else
+            needs_generation=true
+        fi
+
+        if [ "$needs_generation" = true ]; then
             print_substep "⚙️" "Sintetizando nova configuração de hardware via nixos-generate-config..."
             local gen_log
             gen_log=$(mktemp /tmp/willos_gen_hw.XXXXXX)
             local gen_ok=false
-            if command -v nixos-generate-config >/dev/null 2>&1; then
-                if nixos-generate-config --show-hardware-config > "$hw_target" 2>"$gen_log"; then
-                    gen_ok=true
-                elif sudo nixos-generate-config --show-hardware-config > "$hw_target" 2>>"$gen_log"; then
-                    gen_ok=true
-                fi
-            else
-                if sudo nixos-generate-config --show-hardware-config > "$hw_target" 2>"$gen_log"; then
-                    gen_ok=true
-                fi
+            if nixos-generate-config --show-hardware-config > "$hw_target" 2>"$gen_log" || sudo nixos-generate-config --show-hardware-config > "$hw_target" 2>>"$gen_log"; then
+                sudo chown "$USER:$(id -gn 2>/dev/null || echo "$USER")" "$hw_target" 2>/dev/null || true
+                gen_ok=true
             fi
             if [ "$gen_ok" = true ] && [ -s "$hw_target" ]; then
-                print_substep "✔" "Configuração de hardware gerada com base nos sensores locais."
+                print_substep "✔" "${C_GREEN}Configuração de hardware gerada com base nos sensores locais.${C_RESET}"
             else
                 print_step_fail "Falha ao gerar hardware-configuration.nix."
                 if [ -s "$gen_log" ]; then
@@ -1059,10 +1125,13 @@ main() {
                 exit 1
             fi
             rm -f "$gen_log"
+        else
+            print_substep "✔" "hardware-configuration.nix local verificado e compatível com este hardware."
         fi
-    else
-        print_substep "✔" "hardware-configuration.nix local já configurado e preservado."
     fi
+
+    # Validação e Montagem do /boot (EFI)
+    ensure_boot_partition_mounted "$hw_target"
 
     # Isola o hardware local do controle de versão
     run_git -C "$TARGET_DIR" reset HEAD hardware-configuration.nix >/dev/null 2>&1 || true
@@ -1149,9 +1218,13 @@ EOF
 
         local persistent_log="/tmp/willos-setup.log"
         local is_oom=false
+        local is_boot_err=false
         if [ -f "$persistent_log" ]; then
             if grep -qiE "SIGKILL|died with <Signals\.SIGKILL|out of memory|oom-killer|Killed" "$persistent_log" 2>/dev/null; then
                 is_oom=true
+            fi
+            if grep -qiE "efiSysMountPoint.*not a mounted partition|Failed to install bootloader|check-mountpoints" "$persistent_log" 2>/dev/null; then
+                is_boot_err=true
             fi
         fi
 
@@ -1163,7 +1236,17 @@ EOF
         echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica WillOS:${C_RESET} Execute com '${C_BOLD}--show-trace${C_RESET}' para inspecionar o erro completo.  ${C_RED}║${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  🔍  Para ver o log: '${C_BOLD}cat ${persistent_log}${C_RESET}'                              ${C_RED}║${C_RESET}"
 
-        if [ "$is_oom" = true ]; then
+        if [ "$is_boot_err" = true ]; then
+            echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}  🚨  ${C_BOLD}${C_RED}ERRO NO BOOTLOADER: PARTIÇÃO /boot NÃO ESTÁ MONTADA${C_RESET}                   ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}O sistema compilou, mas o instalador EFI não encontrou o /boot montado.${C_RESET}  ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      💡 ${C_BOLD}Como resolver:${C_RESET}                                                        ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      1. ${C_CYAN}Sincronize o hardware real desta máquina:${C_RESET}                            ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}         ${C_BOLD}cp /etc/nixos/hardware-configuration.nix ${TARGET_DIR}/hardware-configuration.nix${C_RESET} ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      2. ${C_CYAN}Monte a partição EFI em /boot:${C_RESET}                                       ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}         ${C_BOLD}sudo mount /boot${C_RESET}  ${C_MUTED}(ou: sudo mount /dev/sda1 /boot)${C_RESET}                     ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      3. ${C_CYAN}Reexecute:${C_RESET} ${C_BOLD}./scripts/setup.sh${C_RESET}                                          ${C_RED}║${C_RESET}"
+        elif [ "$is_oom" = true ]; then
             echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
             echo -e "${C_RED}║${C_RESET}  🚨  ${C_BOLD}${C_RED}ERRO CRÍTICO: PROCESSO MORTO POR FALTA DE MEMÓRIA (OOM / SIGKILL: 9)${C_RESET}  ${C_RED}║${C_RESET}"
             echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}O Linux finalizou o compilador Nix por esgotamento de memória RAM/Swap.${C_RESET}  ${C_RED}║${C_RESET}"

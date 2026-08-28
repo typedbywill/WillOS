@@ -378,17 +378,57 @@ ensure_sufficient_memory_and_swap() {
     fi
 }
 
-# Assegura que o hardware local está pronto e configurado
-ensure_local_hardware_ready() {
-    if [ ! -f "$REPO_DIR/hardware-configuration.nix" ]; then
-        if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
-            cp "/etc/nixos/hardware-configuration.nix" "$REPO_DIR/hardware-configuration.nix"
-        elif command -v nixos-generate-config >/dev/null 2>&1; then
-            nixos-generate-config --show-hardware-config > "$REPO_DIR/hardware-configuration.nix"
-        else
-            sudo nixos-generate-config --show-hardware-config > "$REPO_DIR/hardware-configuration.nix" 2>/dev/null || true
+ensure_boot_partition_mounted() {
+    local hw_file="$1"
+
+    if findmnt /boot >/dev/null 2>&1 || mountpoint -q /boot 2>/dev/null; then
+        return 0
+    fi
+
+    # Tenta montar via /etc/fstab primeiro
+    if sudo mount /boot 2>/dev/null; then
+        return 0
+    fi
+
+    # Procura dispositivo do /boot em hardware-configuration.nix
+    local boot_dev=""
+    if [ -f "$hw_file" ]; then
+        boot_dev=$(awk '/fileSystems\."\/boot"/ {in_boot=1} in_boot && /device[ \t]*=[ \t]*"([^"]+)"/ {match($0, /device[ \t]*=[ \t]*"([^"]+)"/, m); print m[1]; in_boot=0}' "$hw_file" 2>/dev/null || echo "")
+    fi
+
+    if [ -n "$boot_dev" ] && [ -e "$boot_dev" ]; then
+        sudo mkdir -p /boot 2>/dev/null || true
+        if sudo mount "$boot_dev" /boot 2>/dev/null; then
+            return 0
         fi
     fi
+
+    # Procura partições do tipo vfat/EFI no sistema
+    local efi_dev
+    efi_dev=$(lsblk -rnpo NAME,FSTYPE,MOUNTPOINT 2>/dev/null | awk '$2=="vfat" && $3=="" {print $1; exit}' || echo "")
+    if [ -n "$efi_dev" ] && [ -e "$efi_dev" ]; then
+        sudo mkdir -p /boot 2>/dev/null || true
+        sudo mount "$efi_dev" /boot 2>/dev/null || true
+    fi
+}
+
+# Assegura que o hardware local está pronto e configurado
+ensure_local_hardware_ready() {
+    local hw_target="$REPO_DIR/hardware-configuration.nix"
+
+    if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
+        if [ ! -f "$hw_target" ] || ! cmp -s "/etc/nixos/hardware-configuration.nix" "$hw_target"; then
+            cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || sudo cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || true
+            sudo chown "$USER:$(id -gn 2>/dev/null || echo "$USER")" "$hw_target" 2>/dev/null || true
+        fi
+    elif [ ! -f "$hw_target" ]; then
+        if command -v nixos-generate-config >/dev/null 2>&1; then
+            nixos-generate-config --show-hardware-config > "$hw_target" 2>/dev/null || sudo nixos-generate-config --show-hardware-config > "$hw_target" 2>/dev/null || true
+            sudo chown "$USER:$(id -gn 2>/dev/null || echo "$USER")" "$hw_target" 2>/dev/null || true
+        fi
+    fi
+
+    ensure_boot_partition_mounted "$hw_target"
 
     if [ ! -f "$REPO_DIR/local-config.nix" ]; then
         local detected_hn
@@ -1031,9 +1071,13 @@ main() {
 
         local persistent_log="/tmp/willos-rebuild.log"
         local is_oom=false
+        local is_boot_err=false
         if [ -f "$persistent_log" ]; then
             if grep -qiE "SIGKILL|died with <Signals\.SIGKILL|out of memory|oom-killer|Killed" "$persistent_log" 2>/dev/null; then
                 is_oom=true
+            fi
+            if grep -qiE "efiSysMountPoint.*not a mounted partition|Failed to install bootloader|check-mountpoints" "$persistent_log" 2>/dev/null; then
+                is_boot_err=true
             fi
         fi
 
@@ -1046,7 +1090,17 @@ main() {
         echo -e "${C_RED}║${C_RESET}  💡 ${C_CYAN}Dica:${C_RESET} Execute '${C_BOLD}rebuild --show-trace${C_RESET}' para inspecionar o erro completo.   ${C_RED}║${C_RESET}"
         echo -e "${C_RED}║${C_RESET}  🔍  Para ver o log: '${C_BOLD}cat ${persistent_log}${C_RESET}'                            ${C_RED}║${C_RESET}"
 
-        if [ "$is_oom" = true ]; then
+        if [ "$is_boot_err" = true ]; then
+            echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}  🚨  ${C_BOLD}${C_RED}ERRO NO BOOTLOADER: PARTIÇÃO /boot NÃO ESTÁ MONTADA${C_RESET}                   ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}O sistema compilou, mas o instalador EFI não encontrou o /boot montado.${C_RESET}  ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      💡 ${C_BOLD}Como resolver:${C_RESET}                                                        ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      1. ${C_CYAN}Sincronize o hardware real desta máquina:${C_RESET}                            ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}         ${C_BOLD}cp /etc/nixos/hardware-configuration.nix ${REPO_DIR}/hardware-configuration.nix${C_RESET}   ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      2. ${C_CYAN}Monte a partição EFI em /boot:${C_RESET}                                       ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}         ${C_BOLD}sudo mount /boot${C_RESET}  ${C_MUTED}(ou: sudo mount /dev/sda1 /boot)${C_RESET}                     ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      3. ${C_CYAN}Reexecute:${C_RESET} ${C_BOLD}rebuild${C_RESET}                                                     ${C_RED}║${C_RESET}"
+        elif [ "$is_oom" = true ]; then
             echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
             echo -e "${C_RED}║${C_RESET}  🚨  ${C_BOLD}${C_RED}ERRO CRÍTICO: PROCESSO MORTO POR FALTA DE MEMÓRIA (OOM / SIGKILL: 9)${C_RESET}  ${C_RED}║${C_RESET}"
             echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}O Linux finalizou o compilador Nix por esgotamento de memória RAM/Swap.${C_RESET}  ${C_RED}║${C_RESET}"
