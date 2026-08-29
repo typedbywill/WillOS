@@ -55,6 +55,7 @@ in
     bun
     moonlight-qt
     rustdesk-flutter
+    scrcpy
     winbox
     socat
     jq

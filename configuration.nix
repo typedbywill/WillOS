@@ -239,6 +239,7 @@
     bibata-cursors
     sddm-astronaut
     cloudflared
+    android-tools
     virt-viewer
     spice
     spice-gtk

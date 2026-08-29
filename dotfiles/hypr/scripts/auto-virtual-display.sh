@@ -48,7 +48,7 @@ restart_sunshine() {
     systemctl --user restart sunshine.service 2>/dev/null || true
 }
 
-# Resgata janelas e workspaces órfãos quando um monitor é desconectado
+# Resgata janelas e workspaces órfãos quando um monitor é desconectado ou quando resta 1 monitor
 rescue_orphaned_windows() {
     local monitors_json
     monitors_json=$(hyprctl -j monitors 2>/dev/null)
@@ -70,13 +70,23 @@ rescue_orphaned_windows() {
         return
     fi
 
+    local num_monitors
+    num_monitors=$(echo "$monitors_json" | jq 'length')
+
     local active_mon_ids active_mon_names
     active_mon_ids=$(echo "$monitors_json" | jq '[.[].id]')
     active_mon_names=$(echo "$monitors_json" | jq '[.[].name]')
 
-    # 1. Resgata workspaces órfãos movendo o workspace inteiro para o monitor ativo.
-    # Isso preserva todas as janelas em seus workspaces de origem (ex: WS 1 mantém suas janelas intactas).
-    if [ -n "$workspaces_json" ] && [ "$workspaces_json" != "[]" ]; then
+    # 1. Resgata workspaces órfãos ou, se houver apenas 1 monitor conectado, transfere todos os workspaces com janelas
+    if [ "$num_monitors" -eq 1 ] && [ -n "$workspaces_json" ] && [ "$workspaces_json" != "[]" ]; then
+        local all_non_target_ws
+        all_non_target_ws=$(echo "$workspaces_json" | jq -r --arg tm "$target_mon" '.[] | select(.id > 0 and .monitor != $tm and .windows > 0) | .id')
+        for ws_id in $all_non_target_ws; do
+            [ -z "$ws_id" ] && continue
+            log "Movendo workspace $ws_id para o único monitor ativo $target_mon..."
+            hyprctl dispatch moveworkspacetomonitor "$ws_id" "$target_mon" >/dev/null 2>&1
+        done
+    elif [ -n "$workspaces_json" ] && [ "$workspaces_json" != "[]" ]; then
         local orphaned_ws_ids
         orphaned_ws_ids=$(echo "$workspaces_json" | jq -r --argjson active_names "$active_mon_names" '
             .[] | select(.id > 0 and (.monitor as $m | ($active_names | index($m)) == null)) | .id
