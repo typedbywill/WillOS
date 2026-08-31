@@ -226,6 +226,7 @@
     fish
     fastfetch
     wl-clipboard
+    fuzzel
     grim
     slurp
     swappy

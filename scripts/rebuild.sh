@@ -420,11 +420,9 @@ ensure_boot_partition_mounted() {
 ensure_local_hardware_ready() {
     local hw_target="$REPO_DIR/hardware-configuration.nix"
 
-    if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
-        if [ ! -f "$hw_target" ] || ! cmp -s "/etc/nixos/hardware-configuration.nix" "$hw_target"; then
-            cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || sudo cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || true
-            sudo chown "$USER:$(id -gn 2>/dev/null || echo "$USER")" "$hw_target" 2>/dev/null || true
-        fi
+    if [ ! -f "$hw_target" ] && [ -f "/etc/nixos/hardware-configuration.nix" ]; then
+        cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || sudo cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || true
+        sudo chown "$USER:$(id -gn 2>/dev/null || echo "$USER")" "$hw_target" 2>/dev/null || true
     elif [ ! -f "$hw_target" ]; then
         if command -v nixos-generate-config >/dev/null 2>&1; then
             nixos-generate-config --show-hardware-config > "$hw_target" 2>/dev/null || sudo nixos-generate-config --show-hardware-config > "$hw_target" 2>/dev/null || true
@@ -809,7 +807,8 @@ print_help() {
     echo -e "  ${C_GREEN}--boot${C_RESET}                 Apenas adiciona a nova geração ao bootloader sem ativar imediatamente"
     echo -e "  ${C_GREEN}--test${C_RESET}                 Testa a configuração temporariamente sem torná-la padrão"
     echo -e "  ${C_GREEN}--show-trace${C_RESET}           Exibe o trace completo em caso de erros de compilação Nix"
-    echo -e "  ${C_GREEN}--fast, --no-pull${C_RESET}      Pula a sincronização remota do Git (modo offline/rápido)"
+    echo -e "  ${C_GREEN}--fast, --no-pull${C_RESET}      Pula a sincronização remota inicial do Git (modo offline/rápido)"
+    echo -e "  ${C_GREEN}--no-push${C_RESET}              Aplica o rebuild localmente sem enviar commits para o GitHub"
     echo -e "  ${C_GREEN}-h, --help${C_RESET}             Exibe esta central de ajuda"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}EXEMPLOS:${C_RESET}"
@@ -839,6 +838,9 @@ main() {
     local skip_pull=false
     local do_flake_update=false
     local action="switch"
+    local skip_pull=false
+    local skip_push=false
+    local do_flake_update=false
     local auto_confirm=false
     local dry_run=false
     local custom_host=""
@@ -850,6 +852,9 @@ main() {
         case "$1" in
             -h|--help)
                 print_help
+                ;;
+            --no-push)
+                skip_push=true
                 ;;
             --fast|--no-pull)
                 skip_pull=true

@@ -62,6 +62,7 @@ in
     xdg-user-dirs
     cliphist
     wl-clipboard
+    fuzzel
     libsecret
   ];
 

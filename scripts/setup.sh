@@ -1068,17 +1068,15 @@ main() {
     local hw_target="$TARGET_DIR/hardware-configuration.nix"
     local needs_generation=false
 
-    # 1. Se existir /etc/nixos/hardware-configuration.nix no host, compara e importa
-    if [ -f "/etc/nixos/hardware-configuration.nix" ]; then
-        if [ ! -f "$hw_target" ] || ! cmp -s "/etc/nixos/hardware-configuration.nix" "$hw_target"; then
-            print_substep "📋" "Importando hardware-configuration.nix real de /etc/nixos/..."
-            if cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || sudo cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null; then
-                sudo chown "$USER:$(id -gn 2>/dev/null || echo "$USER")" "$hw_target" 2>/dev/null || true
-                print_substep "✔" "${C_GREEN}hardware-configuration.nix sincronizado com o host local.${C_RESET}"
-            fi
-        else
-            print_substep "✔" "hardware-configuration.nix alinhado com o hardware desta máquina."
+    # 1. Se não existir no repositório mas existir /etc/nixos/hardware-configuration.nix, importa
+    if [ ! -f "$hw_target" ] && [ -f "/etc/nixos/hardware-configuration.nix" ]; then
+        print_substep "📋" "Importando hardware-configuration.nix real de /etc/nixos/..."
+        if cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null || sudo cp "/etc/nixos/hardware-configuration.nix" "$hw_target" 2>/dev/null; then
+            sudo chown "$USER:$(id -gn 2>/dev/null || echo "$USER")" "$hw_target" 2>/dev/null || true
+            print_substep "✔" "${C_GREEN}hardware-configuration.nix sincronizado com o host local.${C_RESET}"
         fi
+    elif [ -f "$hw_target" ]; then
+        print_substep "✔" "hardware-configuration.nix alinhado com o hardware desta máquina."
     else
         # 2. Se não existir /etc/nixos/hardware-configuration.nix, verifica se os discos do arquivo atual existem no hardware
         if [ -f "$hw_target" ]; then
