@@ -245,6 +245,7 @@
     spice-gtk
     spice-protocol
     virtio-win
+    qbittorrent
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     (pkgs.writeShellScriptBin "rebuild" ''
