@@ -18,9 +18,9 @@ fi
 # Determina se está no modo claro ou escuro
 MODE="${SCHEME_MODE:-dark}"
 if [ "$MODE" = "light" ]; then
-    ICON_THEME="kora-pgrey"
+    ICON_THEME="WhiteSur-light"
 else
-    ICON_THEME="kora-pgrey"
+    ICON_THEME="WhiteSur-dark"
 fi
 
 # 2. Gera o kdeglobals harmonizado com as fontes, ícones e cores do Caelestia
@@ -41,7 +41,7 @@ contrast=4
 widgetStyle=Breeze
 
 [Icons]
-Theme=kora-pgrey
+Theme=WhiteSur-dark
 KDE_HEADER
 
 # Ajusta tema de ícones de acordo com o modo

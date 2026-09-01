@@ -30,6 +30,7 @@ in
     papirus-icon-theme
     papirus-folders
     kora-icon-theme
+    whitesur-icon-theme
     libreoffice-stable
     hunspell
     hunspellDicts.pt_BR
@@ -181,8 +182,9 @@ EOF
       size = 11;
     };
     iconTheme = {
-      name = "kora-pgrey";
-      package = pkgs.kora-icon-theme;
+      # WhiteSur replica a linguagem visual de ícones do macOS (Big Sur).
+      name = "WhiteSur-dark";
+      package = pkgs.whitesur-icon-theme;
     };
     cursorTheme = {
       name = "Bibata-Modern-Classic";
