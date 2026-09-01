@@ -628,6 +628,7 @@ show_preflight_audit() {
     local action="$2"
     local do_flake_update="$3"
     local skip_pull="$4"
+    local skip_push="$5"
 
     local current_hn
     current_hn=$(hostname 2>/dev/null || echo "nixos")
@@ -739,8 +740,12 @@ show_preflight_audit() {
     printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Upgrade de Flake  :${C_RESET} %-62b ${C_BORDER}│${C_RESET}\n" "$flake_str"
 
     local git_str="${C_CYAN}Pull (rebase) origin/$branch + Push pós-rebuild${C_RESET}"
-    if [ "$skip_pull" = true ]; then
-        git_str="${C_YELLOW}Modo Rápido / Offline (Sincronização remota ignorada)${C_RESET}"
+    if [ "$skip_pull" = true ] && [ "$skip_push" = true ]; then
+        git_str="${C_YELLOW}Modo Totalmente Offline (Pull e Push desativados)${C_RESET}"
+    elif [ "$skip_pull" = true ]; then
+        git_str="${C_YELLOW}Modo Rápido / Sem Pull (Push ativado pós-rebuild)${C_RESET}"
+    elif [ "$skip_push" = true ]; then
+        git_str="${C_YELLOW}Modo Local (Pull ativado, Push desativado)${C_RESET}"
     fi
     printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Sincronização Git :${C_RESET} %-62b ${C_BORDER}│${C_RESET}\n" "$git_str"
 
@@ -768,7 +773,7 @@ show_preflight_audit() {
 # Diálogo interativo de confirmação pré-rebuild
 interactive_preflight_confirm() {
     while true; do
-        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
+        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull" "$skip_push"
 
         local prompt_msg="${C_BOLD}${C_CYAN}Deseja prosseguir com o rebuild do WillOS?${C_RESET} [${C_GREEN}S${C_RESET}/n]: "
         echo -ne "$prompt_msg"
@@ -836,11 +841,9 @@ print_help() {
 main() {
     local total_steps=5
     local skip_pull=false
-    local do_flake_update=false
-    local action="switch"
-    local skip_pull=false
     local skip_push=false
     local do_flake_update=false
+    local action="switch"
     local auto_confirm=false
     local dry_run=false
     local custom_host=""
@@ -920,7 +923,7 @@ main() {
 
     # Se modo dry-run / info solicitado, apenas exibe a auditoria e encerra
     if [ "$dry_run" = true ]; then
-        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
+        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull" "$skip_push"
         exit 0
     fi
 
@@ -929,10 +932,10 @@ main() {
         if [ -t 0 ] || [ -r /dev/tty ]; then
             interactive_preflight_confirm
         else
-            show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
+            show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull" "$skip_push"
         fi
     else
-        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull"
+        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull" "$skip_push"
     fi
 
     local global_start_time
@@ -1234,7 +1237,9 @@ main() {
     git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     # Envio com HUD dinâmico
-    if run_with_dynamic_hud "Publicação no GitHub (origin/$branch)" "Enviando alterações..." git -C "$REPO_DIR" push origin "$branch"; then
+    if [ "$skip_push" = true ]; then
+        print_substep "ℹ️" "${C_YELLOW}Sincronização remota ignorada (--no-push ativado).${C_RESET}"
+    elif run_with_dynamic_hud "Publicação no GitHub (origin/$branch)" "Enviando alterações..." git -C "$REPO_DIR" push origin "$branch"; then
         print_substep "☁️" "${C_GREEN}Push realizado com sucesso para o GitHub!${C_RESET}"
     else
         print_substep "⚠️" "${C_YELLOW}Aviso:${C_RESET} O rebuild local foi concluído, mas houve falha no push (sem internet ou sem permissão)."
