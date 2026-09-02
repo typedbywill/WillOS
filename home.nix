@@ -121,12 +121,15 @@ in
   # Gerenciamento de dotfiles declarativos
   xdg.configFile."hypr/hyprland.conf" = { source = ./dotfiles/hypr/hyprland.conf; force = true; };
   xdg.configFile."hypr/hyprlock.conf" = { source = ./dotfiles/hypr/hyprlock.conf; force = true; };
-  # O script de bloqueio desliga o DPMS após 60 s. Este listener garante que a
-  # primeira atividade de teclado ou mouse volte a ligar os monitores.
-  # Não há `on-timeout`, então ele não desliga telas durante uso normal.
+  # Desliga DPMS somente após um minuto de sessão bloqueada. É importante que
+  # `on-timeout` e `on-resume` pertençam ao mesmo listener: o hypridle somente
+  # executa `on-resume` quando o timeout daquele listener foi disparado.
+  # Assim, a primeira entrada liga os monitores novamente.
   xdg.configFile."hypr/hypridle.conf".text = ''
     listener {
       timeout = 60
+      condition_cmd = caelestia shell lock isLocked 2>/dev/null | grep -qx true
+      on-timeout = hyprctl dispatch dpms off
       on-resume = hyprctl dispatch dpms on
     }
   '';
@@ -160,6 +163,15 @@ in
     mkdir -p "$SCHEME_DIR"
     if [ ! -f "$SCHEME_FILE" ]; then
       cp -f ${./dotfiles/hypr/scheme/default.conf} "$SCHEME_FILE" || true
+    fi
+  '';
+
+  # A topologia dos monitores varia por máquina. Cria um ponto de partida local
+  # somente na primeira ativação e preserva quaisquer ajustes posteriores.
+  home.activation.ensureHyprMonitorConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    MONITORS_FILE="${config.home.homeDirectory}/.config/hypr/monitors.conf"
+    if [ ! -e "$MONITORS_FILE" ]; then
+      cp ${./dotfiles/hypr/monitors.conf.example} "$MONITORS_FILE"
     fi
   '';
 

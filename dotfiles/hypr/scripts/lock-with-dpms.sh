@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
-# Bloqueia pelo Caelestia e, se a sessão continuar bloqueada, desliga os
-# monitores após um minuto. Não altera o comportamento de inatividade normal.
+# Bloqueia pelo Caelestia. O hypridle controla o DPMS enquanto a sessão estiver
+# bloqueada, para que a primeira entrada sempre religue os monitores.
 
 caelestia shell lock lock
-sleep 60
-
-if caelestia shell lock isLocked 2>/dev/null | grep -qx 'true'; then
-    hyprctl dispatch dpms off
-fi
