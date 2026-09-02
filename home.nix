@@ -121,11 +121,14 @@ in
   # Gerenciamento de dotfiles declarativos
   xdg.configFile."hypr/hyprland.conf" = { source = ./dotfiles/hypr/hyprland.conf; force = true; };
   xdg.configFile."hypr/hyprlock.conf" = { source = ./dotfiles/hypr/hyprlock.conf; force = true; };
-  # Hyprland inicia o hypridle como serviço de usuário.  Sem este arquivo ele
-  # entra em loop de reinicialização; não definimos ações automáticas pois o
-  # sistema foi configurado para não suspender/bloquear por inatividade.
+  # O script de bloqueio desliga o DPMS após 60 s. Este listener garante que a
+  # primeira atividade de teclado ou mouse volte a ligar os monitores.
+  # Não há `on-timeout`, então ele não desliga telas durante uso normal.
   xdg.configFile."hypr/hypridle.conf".text = ''
-    # Configuração intencionalmente sem listeners de inatividade.
+    listener {
+      timeout = 60
+      on-resume = hyprctl dispatch dpms on
+    }
   '';
   xdg.configFile."hypr/scripts/lock-with-dpms.sh" = { source = ./dotfiles/hypr/scripts/lock-with-dpms.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/auto-virtual-display.sh" = { source = ./dotfiles/hypr/scripts/auto-virtual-display.sh; force = true; executable = true; };
