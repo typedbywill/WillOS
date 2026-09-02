@@ -237,6 +237,7 @@
     networkmanagerapplet
     material-symbols
     nerd-fonts.caskaydia-cove
+    bibata-cursors
     sddm-astronaut
     cloudflared
     android-tools
@@ -301,8 +302,10 @@
   };
 
   environment.sessionVariables = {
-    XCURSOR_THEME = "oreo_spark_dark_cursors";
+    XCURSOR_THEME = "Bibata-Modern-Ice";
     XCURSOR_SIZE = "24";
+    HYPRCURSOR_THEME = "Bibata-Modern-Ice";
+    HYPRCURSOR_SIZE = "24";
     TERMINAL = "kitty";
   };
 

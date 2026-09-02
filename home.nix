@@ -4,18 +4,6 @@ let
   chatgpt = pkgs.callPackage ./pkgs/chatgpt.nix {};
   winbox = pkgs.callPackage ./pkgs/winbox.nix {};
   mysql-workbench = pkgs.callPackage ./pkgs/mysql-workbench.nix {};
-  oreoSparkDarkCursors = pkgs.stdenvNoCC.mkDerivation {
-    pname = "oreo-spark-dark-cursors";
-    version = "local";
-    src = ./assets/icons/cursors/oreo-spark-dark-cursors.tar.gz;
-
-    unpackPhase = "tar -xzf $src";
-
-    installPhase = ''
-      install -d "$out/share/icons"
-      cp -r oreo_spark_dark_cursors "$out/share/icons/"
-    '';
-  };
 in
 {
   imports = [
@@ -183,7 +171,7 @@ in
   home.activation.ensureHyprMonitorConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     MONITORS_FILE="${config.home.homeDirectory}/.config/hypr/monitors.conf"
     if [ ! -e "$MONITORS_FILE" ]; then
-      cp ${./dotfiles/hypr/monitors.conf.example} "$MONITORS_FILE"
+      install -m 600 ${./dotfiles/hypr/monitors.conf.example} "$MONITORS_FILE"
     fi
   '';
 
@@ -214,7 +202,7 @@ EOF
       package = pkgs.whitesur-icon-theme;
     };
     cursorTheme = {
-      name = "oreo_spark_dark_cursors";
+      name = "Bibata-Modern-Ice";
       size = 24;
     };
     gtk3.bookmarks = [
@@ -231,8 +219,8 @@ EOF
     enable = true;
     gtk.enable = true;
     x11.enable = true;
-    name = "oreo_spark_dark_cursors";
-    package = oreoSparkDarkCursors;
+    name = "Bibata-Modern-Ice";
+    package = pkgs.bibata-cursors;
     size = 24;
   };
 
