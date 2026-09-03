@@ -30,7 +30,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+  outputs = { nixpkgs, home-manager, ... }@inputs:
   let
     resolveLocalModule = name:
       let
@@ -44,7 +44,7 @@
         else if builtins.pathExists etcPath then etcPath
         else {};
 
-    mkWillOS = { extraModules ? [] }: nixpkgs.lib.nixosSystem {
+    mkWillOS = nixpkgs.lib.nixosSystem {
       specialArgs = { inherit inputs; };
       modules = [
         ./configuration.nix
@@ -58,16 +58,13 @@
           home-manager.extraSpecialArgs = { inherit inputs; };
           home-manager.users.william = import ./home.nix;
         }
-      ] ++ extraModules;
+      ];
     };
   in {
     nixosConfigurations = {
-      willos = mkWillOS {};
-      default = self.nixosConfigurations.willos;
-      # Aliases para retrocompatibilidade
-      notegiga = self.nixosConfigurations.willos;
-      casa = self.nixosConfigurations.willos;
-      nixos = self.nixosConfigurations.willos;
+      # Existe um único sistema público. Identidade e hardware da máquina são
+      # injetados pelos arquivos locais ignorados pelo Git acima.
+      willos = mkWillOS;
     };
   };
 }

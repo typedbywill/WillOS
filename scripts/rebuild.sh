@@ -111,7 +111,7 @@ send_notify() {
 }
 
 # ------------------------------------------------------------------------------
-# 💻 CABEÇALHO CYBERPUNK & TELEMETRIA
+# 💻 CABEÇALHO & TELEMETRIA
 # ------------------------------------------------------------------------------
 print_header() {
     local host_name
@@ -314,7 +314,7 @@ run_with_dynamic_hud() {
 }
 
 # ------------------------------------------------------------------------------
-# 🔍 DETECÇÃO INTELIGENTE DE PERFIL E PARSER DE HARDWARE
+# 🔍 DETECÇÃO E VALIDAÇÃO DO HARDWARE LOCAL
 # ------------------------------------------------------------------------------
 
 detect_ram_total_mb() {
@@ -464,6 +464,24 @@ EOF
 
     # Garante que os arquivos locais permaneçam fora do índice Git
     git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
+}
+
+# Interrompe o rebuild se a fronteira entre base pública e dados locais tiver
+# sido removida. Arquivo ignorado não basta se ele já estiver rastreado.
+assert_local_files_are_private() {
+    local local_path
+    for local_path in hardware-configuration.nix local-config.nix; do
+        if ! git -C "$REPO_DIR" check-ignore -q -- "$local_path"; then
+            echo -e "${C_RED}✖ Proteção Git ausente para ${local_path}.${C_RESET}" >&2
+            echo -e "${C_YELLOW}O rebuild foi interrompido para não sincronizar dados desta máquina.${C_RESET}" >&2
+            exit 1
+        fi
+        if git -C "$REPO_DIR" ls-files --error-unmatch -- "$local_path" >/dev/null 2>&1; then
+            echo -e "${C_RED}✖ ${local_path} está rastreado pelo Git.${C_RESET}" >&2
+            echo -e "${C_YELLOW}Remova-o do índice antes do rebuild: git rm --cached -- ${local_path}${C_RESET}" >&2
+            exit 1
+        fi
+    done
 }
 
 # Extrai a lista de partições e sistemas de arquivos do hardware-configuration.nix local
@@ -624,11 +642,10 @@ check_single_disk_status() {
 # 📊 PAINEL DE AUDITORIA & CONFIRMAÇÃO PRÉ-REBUILD
 # ------------------------------------------------------------------------------
 show_preflight_audit() {
-    local host="$1"
-    local action="$2"
-    local do_flake_update="$3"
-    local skip_pull="$4"
-    local skip_push="$5"
+    local action="$1"
+    local do_flake_update="$2"
+    local skip_pull="$3"
+    local skip_push="$4"
 
     local current_hn
     current_hn=$(hostname 2>/dev/null || echo "nixos")
@@ -766,14 +783,14 @@ show_preflight_audit() {
         echo -e "${C_RED}${C_BOLD}⚠️  ALERTA DE SEGURANÇA:${C_RESET} ${C_YELLOW}${missing_disks} disco(s)/partição(ões) do hardware local NÃO foram encontrados!${C_RESET}"
         echo -e "${C_MUTED}    Verifique o seu hardware-configuration.nix antes de continuar.${C_RESET}\n"
     else
-        echo -e "${C_GREEN}${C_BOLD}✔  COMPATIBILIDADE CONFIRMADA:${C_RESET} ${C_MUTED}Todos os ${matched_disks} discos/mappers deste perfil correspondem a este hardware.${C_RESET}\n"
+        echo -e "${C_GREEN}${C_BOLD}✔  COMPATIBILIDADE CONFIRMADA:${C_RESET} ${C_MUTED}Todos os ${matched_disks} discos/mappers da configuração local correspondem a este hardware.${C_RESET}\n"
     fi
 }
 
 # Diálogo interativo de confirmação pré-rebuild
 interactive_preflight_confirm() {
     while true; do
-        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull" "$skip_push"
+        show_preflight_audit "$action" "$do_flake_update" "$skip_pull" "$skip_push"
 
         local prompt_msg="${C_BOLD}${C_CYAN}Deseja prosseguir com o rebuild do WillOS?${C_RESET} [${C_GREEN}S${C_RESET}/n]: "
         echo -ne "$prompt_msg"
@@ -803,9 +820,8 @@ print_help() {
     echo -e "${C_BOLD}${C_CYAN}USO:${C_RESET} rebuild [OPÇÕES] [MENSAGEM_DE_COMMIT]"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}OPÇÕES DE CONTROLE & SEGURANÇA:${C_RESET}"
-    echo -e "  ${C_GREEN}-H, --host <nome>${C_RESET}      Especifica manualmente o perfil do host (ex: casa, notegiga)"
     echo -e "  ${C_GREEN}-y, --yes${C_RESET}              Pula a confirmação interativa de segurança pré-rebuild"
-    echo -e "  ${C_GREEN}--dry-run, --info${C_RESET}      Apenas audita perfis, discos e atualizações sem aplicar nada"
+    echo -e "  ${C_GREEN}--dry-run, --info${C_RESET}      Apenas audita configuração local, discos e atualizações sem aplicar nada"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}OPÇÕES DE COMPILAÇÃO & ATUALIZAÇÃO:${C_RESET}"
     echo -e "  ${C_GREEN}-u, --upgrade${C_RESET}          Atualiza todos os inputs do Flake (nix flake update) antes do rebuild"
@@ -822,9 +838,6 @@ print_help() {
     echo ""
     echo -e "${C_MUTED}# Apenas inspecionar compatibilidade de hardware e discos sem rebuild:${C_RESET}"
     echo -e "  ${C_CYAN}rebuild --info${C_RESET}"
-    echo ""
-    echo -e "${C_MUTED}# Rebuild forçando o perfil 'casa':${C_RESET}"
-    echo -e "  ${C_CYAN}rebuild --host casa${C_RESET}"
     echo ""
     echo -e "${C_MUTED}# Rebuild com mensagem personalizada:${C_RESET}"
     echo -e "  ${C_CYAN}rebuild \"adicionando novos scripts e temas\"${C_RESET}"
@@ -846,7 +859,6 @@ main() {
     local action="switch"
     local auto_confirm=false
     local dry_run=false
-    local custom_host=""
     local rebuild_args=()
     local commit_msg=""
 
@@ -877,12 +889,10 @@ main() {
             --dry-run|--info)
                 dry_run=true
                 ;;
-            -H|--host|--profile)
-                shift
-                custom_host="$1"
-                ;;
-            --host=*|--profile=*)
-                custom_host="${1#*=}"
+            -H|--host|--host=*|--profile|--profile=*)
+                echo -e "${C_RED}✖ WillOS não usa perfis por máquina.${C_RESET}" >&2
+                echo -e "${C_YELLOW}Defina hostname, GPU e demais particularidades em local-config.nix.${C_RESET}" >&2
+                exit 2
                 ;;
             --show-trace|-v|--verbose|-L|--print-build-logs|--quiet|-k|--keep-going|-K|--keep-failed|--fallback|--repair|--refresh|--offline|--accept-flake-config)
                 rebuild_args+=("$1")
@@ -917,13 +927,11 @@ main() {
 
     # Garante que os arquivos locais de hardware estão prontos
     ensure_local_hardware_ready
-
-    # Configuração do alvo do Flake (padrão: willos)
-    local target_host="${custom_host:-willos}"
+    assert_local_files_are_private
 
     # Se modo dry-run / info solicitado, apenas exibe a auditoria e encerra
     if [ "$dry_run" = true ]; then
-        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull" "$skip_push"
+        show_preflight_audit "$action" "$do_flake_update" "$skip_pull" "$skip_push"
         exit 0
     fi
 
@@ -932,10 +940,10 @@ main() {
         if [ -t 0 ] || [ -r /dev/tty ]; then
             interactive_preflight_confirm
         else
-            show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull" "$skip_push"
+            show_preflight_audit "$action" "$do_flake_update" "$skip_pull" "$skip_push"
         fi
     else
-        show_preflight_audit "$target_host" "$action" "$do_flake_update" "$skip_pull" "$skip_push"
+        show_preflight_audit "$action" "$do_flake_update" "$skip_pull" "$skip_push"
     fi
 
     local global_start_time
@@ -1035,7 +1043,7 @@ main() {
     # ==========================================================================
     # FASE 3: COMPILAÇÃO & ATIVAÇÃO DO SISTEMA
     # ==========================================================================
-    print_step_header "3" "$total_steps" "⚡" "Compilação & Ativação do WillOS [$target_host] ($action)"
+    print_step_header "3" "$total_steps" "⚡" "Compilação & Ativação do WillOS ($action)"
 
     # Limpeza preventiva e resolução de conflitos de unidades transientes do systemd
     if sudo systemctl is-active --quiet nixos-rebuild-switch-to-configuration.service 2>/dev/null; then
@@ -1076,7 +1084,7 @@ main() {
         fi
     fi
 
-    if ! run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema ($target_host)..." sudo FLAKE_DIR="$REPO_DIR" nixos-rebuild "$action" --impure --flake "$REPO_DIR#$target_host" "${rebuild_args[@]}"; then
+    if ! run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema..." sudo FLAKE_DIR="$REPO_DIR" nixos-rebuild "$action" --impure --flake "$REPO_DIR#willos" "${rebuild_args[@]}"; then
         print_step_fail "Falha durante a reconstrução do WillOS."
         play_sound "error"
         send_notify "critical" "❌ Erro no Rebuild WillOS" "A compilação do sistema falhou. Verifique os logs no terminal."

@@ -60,7 +60,6 @@ function rebuild --description "Reconstruir o WillOS com visual dinâmico e esta
 end
 
 # Autocompletes interativos do comando rebuild
-complete -c rebuild -l host -s H -d "Especificar target do Flake (padrão: willos)"
 complete -c rebuild -l yes -s y -d "Pular confirmação interativa pré-rebuild"
 complete -c rebuild -l info -d "Inspecionar compatibilidade de hardware e discos sem rebuild"
 complete -c rebuild -l dry-run -d "Apenas auditar configurações sem aplicar nada"
@@ -71,5 +70,4 @@ complete -c rebuild -l show-trace -d "Exibir trace detalhado de erros de compila
 complete -c rebuild -l fast -d "Pular sincronização do Git (modo rápido)"
 complete -c rebuild -l no-pull -d "Pular git pull"
 complete -c rebuild -l help -s h -d "Exibir central de ajuda da atualização"
-
 

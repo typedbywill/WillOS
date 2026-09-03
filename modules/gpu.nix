@@ -33,7 +33,7 @@ in
       };
     }
 
-    # Perfil: Intel
+    # Configuração Intel
     (lib.mkIf (cfg.type == "intel" || cfg.type == "hybrid-intel-nvidia") {
       hardware.graphics.extraPackages = with pkgs; [
         intel-media-driver
@@ -41,7 +41,7 @@ in
       ];
     })
 
-    # Perfil: NVIDIA
+    # Configuração NVIDIA
     (lib.mkIf (cfg.type == "nvidia" || cfg.type == "hybrid-intel-nvidia") {
       services.xserver.videoDrivers = [ "nvidia" ];
 
@@ -73,7 +73,7 @@ in
       };
     })
 
-    # Perfil: AMD
+    # Configuração AMD
     (lib.mkIf (cfg.type == "amd") {
       services.xserver.videoDrivers = [ "amdgpu" ];
       hardware.graphics.extraPackages = with pkgs; [

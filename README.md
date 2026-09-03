@@ -6,10 +6,10 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada como uma **plat
 
 ---
 
-## ⚡ Princípio Fundamental: Separação entre Sistema vs. Hardware
+## ⚡ Regra Fundamental: Base Única + Configuração Local
 
 > [!IMPORTANT]
-> **O WillOS compartilha configurações, ambientes de trabalho e dotfiles. O hardware (discos, UUIDs e GPU) é desacoplado e configurado localmente em cada máquina.**
+> **O WillOS não possui perfis por máquina.** Não crie alvos como `casa`, `notebook` ou nomes de computadores. Existe somente `nixosConfigurations.willos`; hardware, hostname e qualquer personalização da máquina entram em arquivos locais ignorados pelo Git.
 
 - **O que É sincronizado no Git (Configurações Universais)**:
   - Ambiente gráfico (Hyprland, Caelestia Shell, Waybar, temas visuais, esquemas de cores e fontes).
@@ -18,16 +18,19 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada como uma **plat
   - Scripts de comportamento do desktop (workspaces multi-telas, display virtual, Sunshine).
   - Módulos do sistema (GPU modular: `intel`, `nvidia`, `amd`, `hybrid-intel-nvidia`).
 
-- **O que É mantido LOCALMENTE fora do Git**:
+- **O que fica LOCALMENTE e nunca é sincronizado pelo Git**:
   - `hardware-configuration.nix` *(ignorado no Git)*: Gerado pelo `nixos-generate-config` na própria máquina com os UUIDs das partições e módulos de boot daquela placa-mãe.
-  - `local-config.nix` *(ignorado no Git)*: Arquivo simples para definir o Hostname e o Driver de GPU da máquina atual (veja `local-config.example.nix`).
+  - `local-config.nix` *(ignorado no Git)*: Hostname, GPU e demais opções particulares desta instalação (veja `local-config.example.nix`).
 
----
+As regras são intencionais:
 
-## 🏗️ Arquitetura em Duas Camadas
+1. Não existem diretórios, módulos ou outputs por computador.
+2. O template público contém apenas valores genéricos; nunca edite o template com dados reais.
+3. O `rebuild` usa sempre `.#willos` e recusa `--host` e `--profile`.
+4. O `rebuild` é interrompido se os dois arquivos locais deixarem de estar ignorados ou aparecerem no índice do Git.
 
-1. **Camada 1 (Este Repositório - Público)**: Instalação do sistema operacional, drivers, Wayland/Hyprland, Caelestia, navegadores, terminal, fontes e tema visual padrão.
-2. **Camada 2 ([Repositório Privado](https://github.com/typedbywill/nixos-private))**: Injeta wallpapers pessoais, credenciais/tokens (Cloudflare Tunnel), configurações e pareamentos declarativos do Syncthing.
+> [!WARNING]
+> Ignorar um arquivo no Git impede a sincronização, mas não transforma segredos em opções Nix seguras: valores usados durante o build podem aparecer na Nix Store. Senhas, tokens e chaves devem ficar fora deste repositório e fora das expressões Nix, em um gerenciador de segredos apropriado.
 
 ---
 
@@ -36,11 +39,11 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada como uma **plat
 ```text
 .
 ├── setup.sh                   # Script instalador universal e autônomo para qualquer máquina
-├── flake.nix                  # Flake principal universal (nixosConfigurations.willos)
+├── flake.nix                  # Único alvo público: nixosConfigurations.willos
 ├── flake.lock                 # Travamento de versões dos pacotes e flakes
 ├── configuration.nix          # Configuração compartilhada do sistema (serviços, áudio, boot, etc.)
 ├── home.nix                   # Home Manager (pacotes de usuário, temas GTK/Qt, dotfiles)
-├── local-config.example.nix   # Template documentado de configurações locais de máquina
+├── local-config.example.nix   # Template público genérico; não recebe valores reais
 │
 ├── hardware-configuration.nix # [Local / .gitignore] Gerado automaticamente no hardware local
 ├── local-config.nix           # [Local / .gitignore] Configurações locais (GPU, Hostname)
@@ -89,8 +92,11 @@ cd ~/WillOS
 # Copiar ou gerar o hardware-configuration da máquina:
 cp /etc/nixos/hardware-configuration.nix ./hardware-configuration.nix
 
-# Criar a configuração local com GPU e Hostname:
+# Criar a configuração exclusivamente local com GPU e hostname:
 cp local-config.example.nix local-config.nix
+
+# Editar somente a cópia ignorada:
+$EDITOR local-config.nix
 
 # Aplicar o sistema:
 sudo nixos-rebuild switch --flake .#willos
@@ -108,8 +114,18 @@ rebuild
 
 ### 🛡️ Recursos de Segurança & Auditoria Integrados:
 - **Auditoria de Hardware & Discos**: Antes de executar o rebuild, o script inspeciona e valida se as partições e discos mapeados no hardware local estão ativos.
-- **Detecção e Preservação Local**: Seus arquivos `local-config.nix` e `hardware-configuration.nix` são preservados e isolados do Git.
+- **Barreira contra vazamento**: `local-config.nix` e `hardware-configuration.nix` precisam estar ignorados e não rastreados; caso contrário, o rebuild acusa o problema e para.
+- **Alvo único**: Toda máquina aplica a mesma base com `.#willos`; diferenças são lidas somente dos arquivos locais.
 - **Confirmação Interativa**: Exibe um resumo completo da geração atual, discos, GPU e alterações antes de aplicar.
+
+Para conferir manualmente a separação:
+
+```bash
+git check-ignore -v hardware-configuration.nix local-config.nix
+git ls-files --error-unmatch hardware-configuration.nix local-config.nix
+```
+
+O primeiro comando deve listar as regras do `.gitignore`; o segundo deve falhar, confirmando que nenhum dos arquivos está rastreado.
 
 ### ⚙️ Opções Úteis do Comando:
 - `rebuild --info`: Apenas exibe o painel de auditoria de hardware e discos sem aplicar nada.

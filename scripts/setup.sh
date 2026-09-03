@@ -163,6 +163,24 @@ run_lspci() {
     fi
 }
 
+# Confirma que dados específicos da máquina não podem entrar no histórico Git.
+assert_local_files_are_private() {
+    local repo_dir="$1"
+    local local_path
+    for local_path in hardware-configuration.nix local-config.nix; do
+        if ! run_git -C "$repo_dir" check-ignore -q -- "$local_path"; then
+            echo -e "${C_RED}✖ Proteção Git ausente para ${local_path}.${C_RESET}" >&2
+            echo -e "${C_YELLOW}A instalação foi interrompida para não sincronizar dados desta máquina.${C_RESET}" >&2
+            exit 1
+        fi
+        if run_git -C "$repo_dir" ls-files --error-unmatch -- "$local_path" >/dev/null 2>&1; then
+            echo -e "${C_RED}✖ ${local_path} está rastreado pelo Git.${C_RESET}" >&2
+            echo -e "${C_YELLOW}Remova-o do índice: git rm --cached -- ${local_path}${C_RESET}" >&2
+            exit 1
+        fi
+    done
+}
+
 # ------------------------------------------------------------------------------
 # 💻 CABEÇALHO CYBERPUNK & TELEMETRIA WILLOS
 # ------------------------------------------------------------------------------
@@ -840,7 +858,7 @@ print_help() {
     echo -e "  ${C_GREEN}-y, --yes${C_RESET}              Pula a confirmação interativa e instala automaticamente"
     echo -e "  ${C_GREEN}--dry-run, --info${C_RESET}      Apenas audita o hardware e configurações sem aplicar nada"
     echo -e "  ${C_GREEN}--dir <caminho>${C_RESET}        Define o diretório de destino do repositório WillOS"
-    echo -e "  ${C_GREEN}--hostname <nome>${C_RESET}      Especifica manualmente o nome do host (ex: willos, notegiga)"
+    echo -e "  ${C_GREEN}--hostname <nome>${C_RESET}      Define o hostname gravado somente em local-config.nix"
     echo -e "  ${C_GREEN}--gpu <driver>${C_RESET}         Força o driver de vídeo: ${C_CYAN}intel${C_RESET}, ${C_CYAN}nvidia${C_RESET}, ${C_CYAN}hybrid-intel-nvidia${C_RESET}, ${C_CYAN}amd${C_RESET}, ${C_CYAN}none${C_RESET}"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}OPÇÕES DE COMPILAÇÃO NIXOS:${C_RESET}"
@@ -903,12 +921,17 @@ main() {
             --dir=*)
                 custom_dir="${1#*=}"
                 ;;
-            --hostname|--host)
+            --hostname)
                 shift
                 custom_hostname="$1"
                 ;;
-            --hostname=*|--host=*)
+            --hostname=*)
                 custom_hostname="${1#*=}"
+                ;;
+            --host|--host=*|--profile|--profile=*)
+                echo -e "${C_RED}✖ WillOS não usa perfis por máquina.${C_RESET}" >&2
+                echo -e "${C_YELLOW}Use --hostname apenas para a identidade local gravada em local-config.nix.${C_RESET}" >&2
+                exit 2
                 ;;
             --gpu)
                 shift
@@ -1056,6 +1079,7 @@ main() {
 
     # Configura safe.directory no git para evitar alertas de permissão
     run_git config --global --add safe.directory "$TARGET_DIR" 2>/dev/null || true
+    assert_local_files_are_private "$TARGET_DIR"
 
     print_step_done "Código-fonte do WillOS pronto para inicialização."
 
