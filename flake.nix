@@ -51,13 +51,16 @@
         (resolveLocalModule "hardware-configuration.nix")
         (resolveLocalModule "local-config.nix")
         home-manager.nixosModules.home-manager
-        {
+        ({ config, ... }: {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
           home-manager.backupFileExtension = "backup";
-          home-manager.extraSpecialArgs = { inherit inputs; };
-          home-manager.users.william = import ./home.nix;
-        }
+          home-manager.extraSpecialArgs = {
+            inherit inputs;
+            localSettings = config.willos.local;
+          };
+          home-manager.users.${config.willos.local.username} = import ./home.nix;
+        })
       ];
     };
   in {

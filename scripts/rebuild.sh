@@ -46,7 +46,8 @@ if [ -z "$REPO_DIR" ]; then
     elif [ -f "$PWD/flake.nix" ]; then
         REPO_DIR="$PWD"
     else
-        REPO_DIR="/home/william/willos"
+        echo "❌ Não foi possível localizar o repositório WillOS." >&2
+        exit 1
     fi
 fi
 SUDO_PID=""

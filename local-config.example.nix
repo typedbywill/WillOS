@@ -6,13 +6,30 @@
 { lib, ... }:
 
 {
-  # Nome do host desta máquina
+  # Identidade e hardware desta máquina.
   networking.hostName = "minha-maquina";
-
-  # Driver de GPU: "intel", "nvidia", "hybrid-intel-nvidia", "amd", ou "none"
   myHardware.gpu.type = "none";
 
-  # Opções adicionais para NVIDIA (se aplicável):
-  # myHardware.gpu.nvidia.open = false;                # Driver proprietário padrão
-  # myHardware.gpu.nvidia.enableContainerToolkit = true; # Suporte a Docker GPU
+  # Dados pessoais e preferências locais. Valores reais pertencem somente à
+  # cópia local-config.nix, nunca a este template versionado.
+  willos.local = {
+    username = "usuario";
+    fullName = "Usuário Local";
+    homeDirectory = "/home/usuario";
+    gitName = "";
+    gitEmail = "";
+    timeZone = "UTC";
+    locale = "en_US.UTF-8";
+    xkbLayout = "us";
+    consoleKeyMap = "us";
+
+    # Monitores e workspaces são específicos do hardware local.
+    hyprlandMonitors = ''
+      monitor = ,preferred,auto,1
+    '';
+  };
+
+  # Opções adicionais para NVIDIA, se aplicável:
+  # myHardware.gpu.nvidia.open = false;
+  # myHardware.gpu.nvidia.enableContainerToolkit = true;
 }

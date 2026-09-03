@@ -1,7 +1,11 @@
 { config, pkgs, lib, inputs, ... }:
 
+let
+  local = config.willos.local;
+in
 {
   imports = [
+    ./modules/local-settings.nix
     ./modules/gpu.nix
   ];
 
@@ -11,7 +15,7 @@
   boot.supportedFilesystems = [ "ntfs" ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  networking.hostName = lib.mkDefault "nixos";
+  networking.hostName = lib.mkDefault "willos";
   networking.networkmanager.enable = true;
   networking.firewall = {
     enable = true;
@@ -23,26 +27,26 @@
 
   # Habilita o serviço Tailscale
   services.tailscale.enable = true;
-  time.timeZone = "America/Sao_Paulo";
+  time.timeZone = local.timeZone;
 
   # Habilita execução de binários não-nix pré-compilados
   programs.nix-ld.enable = true;
 
-  i18n.defaultLocale = "pt_BR.UTF-8";
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "pt_BR.UTF-8";
-    LC_IDENTIFICATION = "pt_BR.UTF-8";
-    LC_MEASUREMENT = "pt_BR.UTF-8";
-    LC_MONETARY = "pt_BR.UTF-8";
-    LC_NAME = "pt_BR.UTF-8";
-    LC_NUMERIC = "pt_BR.UTF-8";
-    LC_PAPER = "pt_BR.UTF-8";
-    LC_TELEPHONE = "pt_BR.UTF-8";
-    LC_TIME = "pt_BR.UTF-8";
-  };
+  i18n.defaultLocale = local.locale;
+  i18n.extraLocaleSettings = lib.genAttrs [
+    "LC_ADDRESS"
+    "LC_IDENTIFICATION"
+    "LC_MEASUREMENT"
+    "LC_MONETARY"
+    "LC_NAME"
+    "LC_NUMERIC"
+    "LC_PAPER"
+    "LC_TELEPHONE"
+    "LC_TIME"
+  ] (_: local.locale);
 
-  services.xserver.xkb.layout = "br";
-  console.keyMap = "br-abnt2";
+  services.xserver.xkb.layout = local.xkbLayout;
+  console.keyMap = local.consoleKeyMap;
 
   # Ativa o NumLock nos TTYs/consoles virtuais durante a inicialização
   systemd.services.numLockOnTty = {
@@ -58,9 +62,9 @@
     };
   };
 
-  users.users.william = {
+  users.users.${local.username} = {
     isNormalUser = true;
-    description = "William";
+    description = local.fullName;
     extraGroups = [ "networkmanager" "wheel" "i2c" "docker" "uinput" "input" "libvirtd" "kvm" ];
     shell = pkgs.fish;
   };
@@ -209,7 +213,7 @@
     };
     autoLogin = {
       enable = true;
-      user = "william";
+      user = local.username;
     };
     defaultSession = "hyprland-uwsm";
   };
@@ -269,13 +273,13 @@
     unitConfig = {
       ConditionPathExists = [
         "|/etc/cloudflared.env"
-        "|/home/william/.config/cloudflared/tunnel.env"
+        "|${local.homeDirectory}/.config/cloudflared/tunnel.env"
       ];
     };
     serviceConfig = {
       EnvironmentFile = [
         "-/etc/cloudflared.env"
-        "-/home/william/.config/cloudflared/tunnel.env"
+        "-${local.homeDirectory}/.config/cloudflared/tunnel.env"
       ];
       ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run";
       Restart = "always";

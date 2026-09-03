@@ -4,7 +4,7 @@
     "enableGtk": true,
     "iconThemeDark": "kora-pgrey",
     "iconThemeLight": "kora-pgrey",
-    "postHook": "bash /home/william/.config/caelestia/sync-kde.sh"
+    "postHook": "bash \"$HOME/.config/caelestia/sync-kde.sh\""
   },
   "toggles": {
     "music": {

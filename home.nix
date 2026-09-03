@@ -1,4 +1,4 @@
-{ config, pkgs, lib, inputs, ... }:
+{ config, pkgs, lib, inputs, localSettings, ... }:
 
 let
   chatgpt = pkgs.callPackage ./pkgs/chatgpt.nix {};
@@ -10,8 +10,8 @@ in
     ./modules/spotify-inactivity-watcher.nix
   ];
 
-  home.username = "william";
-  home.homeDirectory = "/home/william";
+  home.username = localSettings.username;
+  home.homeDirectory = localSettings.homeDirectory;
   home.stateVersion = "26.05";
 
   # Pacotes específicos do usuário
@@ -119,12 +119,22 @@ in
   };
 
   # Gerenciamento de dotfiles declarativos
-  xdg.configFile."hypr/hyprland.conf" = { source = ./dotfiles/hypr/hyprland.conf; force = true; };
-  xdg.configFile."hypr/hyprlock.conf" = { source = ./dotfiles/hypr/hyprlock.conf; force = true; };
-  # Desliga DPMS somente após um minuto de sessão bloqueada. É importante que
-  # `on-timeout` e `on-resume` pertençam ao mesmo listener: o hypridle somente
-  # executa `on-resume` quando o timeout daquele listener foi disparado.
-  # Assim, a primeira entrada liga os monitores novamente.
+  xdg.configFile."hypr/hyprland.conf" = {
+    force = true;
+    text = builtins.replaceStrings
+      [ "@WILLOS_MONITORS@" "@WILLOS_XKB_LAYOUT@" ]
+      [ localSettings.hyprlandMonitors localSettings.xkbLayout ]
+      (builtins.readFile ./dotfiles/hypr/hyprland.conf);
+  };
+  xdg.configFile."hypr/hyprlock.conf" = {
+    force = true;
+    text = builtins.replaceStrings
+      [ "@WILLOS_LOCALE@" ]
+      [ localSettings.locale ]
+      (builtins.readFile ./dotfiles/hypr/hyprlock.conf);
+  };
+  # Desliga DPMS somente após um minuto de sessão bloqueada. `on-timeout` e
+  # `on-resume` ficam no mesmo listener para a primeira entrada religar as telas.
   xdg.configFile."hypr/hypridle.conf".text = ''
     listener {
       timeout = 60
@@ -230,12 +240,13 @@ EOF
     enable = true;
     package = pkgs.gitFull;
     settings = {
-      user = {
-        name = "typedbywill";
-        email = "william97623074@gmail.com";
-      };
       credential = {
         helper = "libsecret";
+      };
+    } // lib.optionalAttrs (localSettings.gitName != "" && localSettings.gitEmail != "") {
+      user = {
+        name = localSettings.gitName;
+        email = localSettings.gitEmail;
       };
     };
   };
