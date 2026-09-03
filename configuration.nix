@@ -250,12 +250,12 @@
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     (pkgs.writeShellScriptBin "rebuild" ''
-      for p in "$HOME/nixos-hyprland-caelestia/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"; do
+      for p in "$HOME/willos/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"; do
         if [ -f "$p" ]; then
           exec bash "$p" "$@"
         fi
       done
-      echo "❌ Script de rebuild não encontrado em $HOME/nixos-hyprland-caelestia/scripts/rebuild.sh nem em $HOME/WillOS/scripts/rebuild.sh" >&2
+      echo "❌ Script de rebuild não encontrado em $HOME/willos/scripts/rebuild.sh nem em $HOME/WillOS/scripts/rebuild.sh" >&2
       exit 1
     '')
   ];
