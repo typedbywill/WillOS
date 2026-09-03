@@ -138,3 +138,29 @@ O primeiro comando deve listar as regras do `.gitignore`; o segundo deve falhar,
 - `rebuild --fast`: Pula a sincronização remota do Git (modo offline/rápido).
 - `rebuild --boot`: Adiciona a nova geração ao bootloader sem ativar imediatamente.
 - `rebuild --test`: Testa a configuração temporariamente sem alterar o bootloader.
+
+### Sincronização e rebuild automáticos
+
+Para uma máquina acompanhar a branch `main` automaticamente, habilite no seu
+`local-config.nix`:
+
+```nix
+willos.autoSync = {
+  enable = true;
+  interval = "15min";
+  randomizedDelay = "2min";
+  action = "switch";
+};
+```
+
+Depois, execute `rebuild` uma vez para instalar o timer. A cada rodada ele:
+
+- consulta o remoto sem alterar a URL de push;
+- não faz nada quando não há commit novo;
+- adia a sincronização se houver arquivos locais modificados ou não rastreados;
+- aceita somente atualização por fast-forward e recusa históricos divergentes;
+- repete um rebuild que tenha falhado na próxima rodada.
+
+Use `action = "boot"` se preferir apenas preparar a nova geração para o próximo
+boot. O estado pode ser consultado com `systemctl list-timers willos-auto-sync.timer`
+e os logs com `journalctl -u willos-auto-sync.service`.

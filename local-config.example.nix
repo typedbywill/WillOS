@@ -31,6 +31,15 @@
     '';
   };
 
+  # Opcional: consulta o Git periodicamente e so executa o rebuild quando um
+  # novo commit remoto puder ser aplicado por fast-forward com a arvore limpa.
+  willos.autoSync = {
+    enable = false;
+    interval = "15min";
+    randomizedDelay = "2min";
+    action = "switch"; # Use "boot" para ativar somente no proximo boot.
+  };
+
   # Opções adicionais para NVIDIA, se aplicável:
   # myHardware.gpu.nvidia.open = false;
   # myHardware.gpu.nvidia.enableContainerToolkit = true;

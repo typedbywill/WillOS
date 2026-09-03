@@ -7,6 +7,7 @@ in
   imports = [
     ./modules/local-settings.nix
     ./modules/gpu.nix
+    ./modules/auto-sync.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
