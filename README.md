@@ -14,13 +14,13 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada como uma **plat
 - **O que É sincronizado no Git (Configurações Universais)**:
   - Ambiente gráfico (Hyprland, Caelestia Shell, Waybar, temas visuais, esquemas de cores e fontes).
   - Shell Fish, aliases, autocompletes, atalhos de teclado e utilitários do terminal.
-  - Programas, associações de arquivos e preferências do usuário (Home Manager).
-  - Scripts de comportamento do desktop (workspaces multi-telas, display virtual, Sunshine).
+  - Programas e associações de arquivos comuns (Home Manager).
+  - Scripts genéricos de comportamento do desktop, display virtual e Sunshine.
   - Módulos do sistema (GPU modular: `intel`, `nvidia`, `amd`, `hybrid-intel-nvidia`).
 
 - **O que fica LOCALMENTE e nunca é sincronizado pelo Git**:
   - `hardware-configuration.nix` *(ignorado no Git)*: Gerado pelo `nixos-generate-config` na própria máquina com os UUIDs das partições e módulos de boot daquela placa-mãe.
-  - `local-config.nix` *(ignorado no Git)*: Hostname, GPU e demais opções particulares desta instalação (veja `local-config.example.nix`).
+  - `local-config.nix` *(ignorado no Git)*: Hostname, GPU, usuário, nome/e-mail do Git, diretório home, locale, fuso horário, teclado, monitores, workspaces e demais opções particulares desta instalação (veja `local-config.example.nix`).
 
 As regras são intencionais:
 
@@ -38,7 +38,6 @@ As regras são intencionais:
 
 ```text
 .
-├── setup.sh                   # Script instalador universal e autônomo para qualquer máquina
 ├── flake.nix                  # Único alvo público: nixosConfigurations.willos
 ├── flake.lock                 # Travamento de versões dos pacotes e flakes
 ├── configuration.nix          # Configuração compartilhada do sistema (serviços, áudio, boot, etc.)
@@ -46,9 +45,14 @@ As regras são intencionais:
 ├── local-config.example.nix   # Template público genérico; não recebe valores reais
 │
 ├── hardware-configuration.nix # [Local / .gitignore] Gerado automaticamente no hardware local
-├── local-config.nix           # [Local / .gitignore] Configurações locais (GPU, Hostname)
+├── local-config.nix           # [Local / .gitignore] Identidade, preferências e hardware
+│
+├── scripts/
+│   ├── setup.sh               # Instalador universal e autônomo
+│   └── rebuild.sh             # Auditoria, rebuild e sincronização da base pública
 │
 ├── modules/                   # Módulos opcionais do sistema
+│   ├── local-settings.nix     # Contrato genérico das opções locais
 │   ├── gpu.nix                # Gerenciador dinâmico de drivers gráficos (Intel / AMD / Nvidia)
 │   └── spotify-inactivity-watcher.nix # Watcher de inatividade do Spotify
 └── dotfiles/                  # Arquivos de configuração dos utilitários
@@ -92,7 +96,7 @@ cd ~/WillOS
 # Copiar ou gerar o hardware-configuration da máquina:
 cp /etc/nixos/hardware-configuration.nix ./hardware-configuration.nix
 
-# Criar a configuração exclusivamente local com GPU e hostname:
+# Criar a configuração exclusivamente local:
 cp local-config.example.nix local-config.nix
 
 # Editar somente a cópia ignorada:
@@ -115,7 +119,7 @@ rebuild
 ### 🛡️ Recursos de Segurança & Auditoria Integrados:
 - **Auditoria de Hardware & Discos**: Antes de executar o rebuild, o script inspeciona e valida se as partições e discos mapeados no hardware local estão ativos.
 - **Barreira contra vazamento**: `local-config.nix` e `hardware-configuration.nix` precisam estar ignorados e não rastreados; caso contrário, o rebuild acusa o problema e para.
-- **Alvo único**: Toda máquina aplica a mesma base com `.#willos`; diferenças são lidas somente dos arquivos locais.
+- **Alvo único**: Toda máquina aplica a mesma base com `.#willos`; identidade, hardware, localização e monitores são lidos somente dos arquivos locais.
 - **Confirmação Interativa**: Exibe um resumo completo da geração atual, discos, GPU e alterações antes de aplicar.
 
 Para conferir manualmente a separação:

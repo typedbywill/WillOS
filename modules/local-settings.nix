@@ -1,7 +1,13 @@
-{ lib, ... }:
+{ config, lib, ... }:
 
 {
   options.willos.local = {
+    configured = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Confirma que local-config.nix foi criado e revisado nesta máquina";
+    };
+
     username = lib.mkOption {
       type = lib.types.str;
       default = "user";
@@ -62,4 +68,23 @@
       description = "Configuração local de monitores e workspaces do Hyprland";
     };
   };
+
+  config.assertions = [
+    {
+      assertion = config.willos.local.configured;
+      message = "Crie local-config.nix a partir de local-config.example.nix antes de aplicar o WillOS.";
+    }
+    {
+      assertion = builtins.match "[a-z_][a-z0-9_-]*" config.willos.local.username != null;
+      message = "willos.local.username não é um nome de usuário Unix válido.";
+    }
+    {
+      assertion = lib.hasPrefix "/" config.willos.local.homeDirectory;
+      message = "willos.local.homeDirectory precisa ser um caminho absoluto.";
+    }
+    {
+      assertion = (config.willos.local.gitName == "") == (config.willos.local.gitEmail == "");
+      message = "Defina willos.local.gitName e gitEmail juntos, ou deixe ambos vazios.";
+    }
+  ];
 }

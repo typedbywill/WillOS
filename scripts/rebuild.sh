@@ -449,6 +449,23 @@ ensure_local_hardware_ready() {
             detected_gpu="amd"
         fi
 
+        local local_username="${SUDO_USER:-${USER:-user}}"
+        [[ "$local_username" =~ ^[a-z_][a-z0-9_-]*$ ]] || local_username="user"
+        local local_home
+        local_home=$(getent passwd "$local_username" 2>/dev/null | cut -d: -f6)
+        [[ "$local_home" =~ ^/[A-Za-z0-9_./-]+$ ]] || local_home="/home/$local_username"
+        local local_timezone
+        local_timezone=$(timedatectl show -p Timezone --value 2>/dev/null || echo "UTC")
+        [[ "$local_timezone" =~ ^[A-Za-z0-9_+./-]+$ ]] || local_timezone="UTC"
+        local local_locale="${LANG:-en_US.UTF-8}"
+        [[ "$local_locale" =~ ^[A-Za-z0-9_.@-]+$ ]] || local_locale="en_US.UTF-8"
+        local local_xkb
+        local_xkb=$(localectl status 2>/dev/null | sed -n 's/^[[:space:]]*X11 Layout:[[:space:]]*//p' | head -n1)
+        [[ "$local_xkb" =~ ^[A-Za-z0-9_,+-]+$ ]] || local_xkb="us"
+        local local_keymap
+        local_keymap=$(localectl status 2>/dev/null | sed -n 's/^[[:space:]]*VC Keymap:[[:space:]]*//p' | head -n1)
+        [[ "$local_keymap" =~ ^[A-Za-z0-9_+-]+$ ]] || local_keymap="us"
+
         cat <<EOF > "$REPO_DIR/local-config.nix"
 # ==============================================================================
 # 🛠️ WillOS - Configuração Local da Máquina
@@ -459,6 +476,22 @@ ensure_local_hardware_ready() {
 {
   networking.hostName = "${detected_hn}";
   myHardware.gpu.type = "${detected_gpu}";
+
+  willos.local = {
+    configured = true;
+    username = "${local_username}";
+    fullName = "${local_username}";
+    homeDirectory = "${local_home}";
+    gitName = "";
+    gitEmail = "";
+    timeZone = "${local_timezone}";
+    locale = "${local_locale}";
+    xkbLayout = "${local_xkb}";
+    consoleKeyMap = "${local_keymap}";
+    hyprlandMonitors = ''
+      monitor = ,preferred,auto,1
+    '';
+  };
 }
 EOF
     fi

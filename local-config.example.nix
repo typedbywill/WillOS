@@ -13,6 +13,7 @@
   # Dados pessoais e preferências locais. Valores reais pertencem somente à
   # cópia local-config.nix, nunca a este template versionado.
   willos.local = {
+    configured = true;
     username = "usuario";
     fullName = "Usuário Local";
     homeDirectory = "/home/usuario";

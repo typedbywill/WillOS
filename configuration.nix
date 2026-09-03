@@ -65,6 +65,7 @@ in
   users.users.${local.username} = {
     isNormalUser = true;
     description = local.fullName;
+    home = local.homeDirectory;
     extraGroups = [ "networkmanager" "wheel" "i2c" "docker" "uinput" "input" "libvirtd" "kvm" ];
     shell = pkgs.fish;
   };

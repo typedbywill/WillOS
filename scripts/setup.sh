@@ -213,7 +213,7 @@ print_header() {
     echo -e "${C_BORDER}│${C_RESET}       ${C_BOLD}${C_CYAN}❄️  W I L L O S   U N I V E R S A L   I N S T A L L E R   v 2 . 0  ❄️${C_RESET}       ${C_BORDER}│${C_RESET}"
     echo -e "${C_BORDER}├─────────────────────────────────────────────────────────────────────────────┤${C_RESET}"
     printf "${C_BORDER}│${C_RESET}  ${C_MUTED}💻 Host:${C_RESET}     ${C_BOLD}%-15s${C_RESET} ${C_MUTED}🐧 Kernel:${C_RESET} ${C_CYAN}%-15s${C_RESET}  ${C_MUTED}🏷️  Geração:${C_RESET}   ${C_YELLOW}#%-9s${C_RESET} ${C_BORDER}│${C_RESET}\n" "$host_name" "$kernel_ver" "$current_gen"
-    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}👤 Operador:${C_RESET} ${C_GREEN}%-15s${C_RESET} ${C_MUTED}📅 Data:${C_RESET}   ${C_MUTED}%-15s${C_RESET}  ${C_MUTED}🌐 Protocolo:${C_RESET} ${C_MAGENTA}%-11s${C_RESET} ${C_BORDER}│${C_RESET}\n" "${USER:-william}" "$now_str" "Nix Flakes"
+    printf "${C_BORDER}│${C_RESET}  ${C_MUTED}👤 Operador:${C_RESET} ${C_GREEN}%-15s${C_RESET} ${C_MUTED}📅 Data:${C_RESET}   ${C_MUTED}%-15s${C_RESET}  ${C_MUTED}🌐 Protocolo:${C_RESET} ${C_MAGENTA}%-11s${C_RESET} ${C_BORDER}│${C_RESET}\n" "${USER:-user}" "$now_str" "Nix Flakes"
     echo -e "${C_BORDER}╰─────────────────────────────────────────────────────────────────────────────╯${C_RESET}"
     echo ""
 }
@@ -1167,7 +1167,24 @@ main() {
     willos_speak "Configurando módulos de GPU (${target_gpu}) e identidade de rede (${target_hn})..."
 
     local local_target="$TARGET_DIR/local-config.nix"
-    if [ ! -f "$local_target" ] || [ -n "$custom_gpu" ] || [ -n "$custom_hostname" ]; then
+    if [ ! -f "$local_target" ]; then
+        local local_username="${SUDO_USER:-${USER:-user}}"
+        [[ "$local_username" =~ ^[a-z_][a-z0-9_-]*$ ]] || local_username="user"
+        local local_home
+        local_home=$(getent passwd "$local_username" 2>/dev/null | cut -d: -f6)
+        [[ "$local_home" =~ ^/[A-Za-z0-9_./-]+$ ]] || local_home="/home/$local_username"
+        local local_timezone
+        local_timezone=$(timedatectl show -p Timezone --value 2>/dev/null || echo "UTC")
+        [[ "$local_timezone" =~ ^[A-Za-z0-9_+./-]+$ ]] || local_timezone="UTC"
+        local local_locale="${LANG:-en_US.UTF-8}"
+        [[ "$local_locale" =~ ^[A-Za-z0-9_.@-]+$ ]] || local_locale="en_US.UTF-8"
+        local local_xkb
+        local_xkb=$(localectl status 2>/dev/null | sed -n 's/^[[:space:]]*X11 Layout:[[:space:]]*//p' | head -n1)
+        [[ "$local_xkb" =~ ^[A-Za-z0-9_,+-]+$ ]] || local_xkb="us"
+        local local_keymap
+        local_keymap=$(localectl status 2>/dev/null | sed -n 's/^[[:space:]]*VC Keymap:[[:space:]]*//p' | head -n1)
+        [[ "$local_keymap" =~ ^[A-Za-z0-9_+-]+$ ]] || local_keymap="us"
+
         cat <<EOF > "$local_target"
 # ==============================================================================
 # 🛠️ WillOS - Configuração Local da Máquina
@@ -1178,11 +1195,30 @@ main() {
 {
   networking.hostName = "${target_hn}";
   myHardware.gpu.type = "${target_gpu}";
+
+  willos.local = {
+    configured = true;
+    username = "${local_username}";
+    fullName = "${local_username}";
+    homeDirectory = "${local_home}";
+    gitName = "";
+    gitEmail = "";
+    timeZone = "${local_timezone}";
+    locale = "${local_locale}";
+    xkbLayout = "${local_xkb}";
+    consoleKeyMap = "${local_keymap}";
+    hyprlandMonitors = ''
+      monitor = ,preferred,auto,1
+    '';
+  };
 }
 EOF
         print_substep "✨" "Matriz local criada em ${C_CYAN}local-config.nix${C_RESET} [GPU: ${C_GREEN}${target_gpu}${C_RESET}, Host: ${C_GREEN}${target_hn}${C_RESET}]."
     else
         print_substep "✔" "local-config.nix já existente (preservando opções previamente configuradas)."
+        if [ -n "$custom_gpu" ] || [ -n "$custom_hostname" ]; then
+            print_substep "⚠️" "As opções --gpu/--hostname não sobrescrevem um arquivo local existente; edite-o diretamente."
+        fi
     fi
 
     # Mantém local-config fora do Git
