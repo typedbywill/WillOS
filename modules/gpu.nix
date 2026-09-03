@@ -56,6 +56,16 @@ in
 
       hardware.nvidia-container-toolkit.enable = cfg.nvidia.enableContainerToolkit;
 
+      # O módulo registra os dispositivos NVIDIA; este helper privilegiado cria
+      # os nós /dev/nvidia* necessários para CUDA e nvidia-smi.
+      environment.systemPackages = [ pkgs.nvidia-modprobe ];
+      security.wrappers.nvidia-modprobe = {
+        source = "${pkgs.nvidia-modprobe}/bin/nvidia-modprobe";
+        owner = "root";
+        group = "root";
+        setuid = true;
+      };
+
       environment.sessionVariables = {
         LIBVA_DRIVER_NAME = "nvidia";
         __GLX_VENDOR_LIBRARY_NAME = "nvidia";
