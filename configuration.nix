@@ -254,7 +254,6 @@ in
     virtio-win
     qbittorrent
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
-    inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     (pkgs.writeShellScriptBin "rebuild" ''
       for p in "$WILLOS_REPO/scripts/rebuild.sh" "$HOME/willos/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"; do
         if [ -f "$p" ]; then
