@@ -1173,6 +1173,8 @@ main() {
         local local_home
         local_home=$(getent passwd "$local_username" 2>/dev/null | cut -d: -f6)
         [[ "$local_home" =~ ^/[A-Za-z0-9_./-]+$ ]] || local_home="/home/$local_username"
+        local local_repo="$TARGET_DIR"
+        [[ "$local_repo" =~ ^/[A-Za-z0-9_./-]+$ ]] || local_repo="$local_home/willos"
         local local_timezone
         local_timezone=$(timedatectl show -p Timezone --value 2>/dev/null || echo "UTC")
         [[ "$local_timezone" =~ ^[A-Za-z0-9_+./-]+$ ]] || local_timezone="UTC"
@@ -1201,6 +1203,7 @@ main() {
     username = "${local_username}";
     fullName = "${local_username}";
     homeDirectory = "${local_home}";
+    repositoryDirectory = "${local_repo}";
     gitName = "";
     gitEmail = "";
     timeZone = "${local_timezone}";

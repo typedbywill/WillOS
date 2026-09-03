@@ -37,7 +37,9 @@ C_BRIGHT_WHITE="\033[97m"
 
 if [ -z "$REPO_DIR" ]; then
     SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)"
-    if [ -f "$SCRIPT_ROOT/flake.nix" ]; then
+    if [ -n "${WILLOS_REPO:-}" ] && [ -f "$WILLOS_REPO/flake.nix" ]; then
+        REPO_DIR="$WILLOS_REPO"
+    elif [ -f "$SCRIPT_ROOT/flake.nix" ]; then
         REPO_DIR="$SCRIPT_ROOT"
     elif [ -d "$HOME/willos" ] && [ -f "$HOME/willos/flake.nix" ]; then
         REPO_DIR="$HOME/willos"
@@ -482,6 +484,7 @@ ensure_local_hardware_ready() {
     username = "${local_username}";
     fullName = "${local_username}";
     homeDirectory = "${local_home}";
+    repositoryDirectory = "${REPO_DIR}";
     gitName = "";
     gitEmail = "";
     timeZone = "${local_timezone}";

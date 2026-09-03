@@ -177,15 +177,6 @@ in
     fi
   '';
 
-  # A topologia dos monitores varia por máquina. Cria um ponto de partida local
-  # somente na primeira ativação e preserva quaisquer ajustes posteriores.
-  home.activation.ensureHyprMonitorConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    MONITORS_FILE="${config.home.homeDirectory}/.config/hypr/monitors.conf"
-    if [ ! -e "$MONITORS_FILE" ]; then
-      install -m 600 ${./dotfiles/hypr/monitors.conf.example} "$MONITORS_FILE"
-    fi
-  '';
-
   # Garante layout moderno e limpo para o Dolphin sem painéis sobrepostos
   home.activation.ensureDolphinState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     STATE_DIR="${config.home.homeDirectory}/.local/state"

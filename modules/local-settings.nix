@@ -26,6 +26,12 @@
       description = "Diretório home da conta local";
     };
 
+    repositoryDirectory = lib.mkOption {
+      type = lib.types.str;
+      default = "/home/user/willos";
+      description = "Diretório local do checkout WillOS";
+    };
+
     gitName = lib.mkOption {
       type = lib.types.str;
       default = "";
@@ -81,6 +87,10 @@
     {
       assertion = lib.hasPrefix "/" config.willos.local.homeDirectory;
       message = "willos.local.homeDirectory precisa ser um caminho absoluto.";
+    }
+    {
+      assertion = lib.hasPrefix "/" config.willos.local.repositoryDirectory;
+      message = "willos.local.repositoryDirectory precisa ser um caminho absoluto.";
     }
     {
       assertion = (config.willos.local.gitName == "") == (config.willos.local.gitEmail == "");

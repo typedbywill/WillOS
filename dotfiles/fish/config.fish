@@ -49,7 +49,13 @@ end
 
 # Função para reconstruir o sistema e sincronizar com o Git automaticamente (Modo Grande Atualização)
 function rebuild --description "Reconstruir o WillOS com visual dinâmico e estatísticas completas"
-    for script in "$HOME/willos/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"
+    set -l scripts
+    if set -q WILLOS_REPO
+        set -a scripts "$WILLOS_REPO/scripts/rebuild.sh"
+    end
+    set -a scripts "$HOME/willos/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"
+
+    for script in $scripts
         if test -f "$script"
             bash "$script" $argv
             return $status
@@ -70,4 +76,3 @@ complete -c rebuild -l show-trace -d "Exibir trace detalhado de erros de compila
 complete -c rebuild -l fast -d "Pular sincronização do Git (modo rápido)"
 complete -c rebuild -l no-pull -d "Pular git pull"
 complete -c rebuild -l help -s h -d "Exibir central de ajuda da atualização"
-

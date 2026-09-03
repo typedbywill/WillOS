@@ -255,12 +255,12 @@ in
     inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default
     (pkgs.writeShellScriptBin "rebuild" ''
-      for p in "$HOME/willos/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"; do
+      for p in "$WILLOS_REPO/scripts/rebuild.sh" "$HOME/willos/scripts/rebuild.sh" "$HOME/WillOS/scripts/rebuild.sh" "$HOME/.config/scripts/rebuild.sh"; do
         if [ -f "$p" ]; then
           exec bash "$p" "$@"
         fi
       done
-      echo "❌ Script de rebuild não encontrado em $HOME/willos/scripts/rebuild.sh nem em $HOME/WillOS/scripts/rebuild.sh" >&2
+      echo "❌ Script de rebuild não encontrado; confira willos.local.repositoryDirectory." >&2
       exit 1
     '')
   ];
@@ -312,6 +312,7 @@ in
     HYPRCURSOR_THEME = "Bibata-Modern-Ice";
     HYPRCURSOR_SIZE = "24";
     TERMINAL = "kitty";
+    WILLOS_REPO = local.repositoryDirectory;
   };
 
   system.stateVersion = "26.05";
