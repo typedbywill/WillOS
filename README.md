@@ -103,7 +103,7 @@ cp local-config.example.nix local-config.nix
 $EDITOR local-config.nix
 
 # Aplicar o sistema:
-sudo nixos-rebuild switch --flake .#willos
+sudo env "FLAKE_DIR=$PWD" nixos-rebuild switch --impure --flake .#willos
 ```
 
 ---
