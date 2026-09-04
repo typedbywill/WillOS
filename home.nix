@@ -147,6 +147,7 @@ in
   xdg.configFile."hypr/scripts/auto-virtual-display.sh" = { source = ./dotfiles/hypr/scripts/auto-virtual-display.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/workspace-compactor.sh" = { source = ./dotfiles/hypr/scripts/workspace-compactor.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/workspace.sh" = { source = ./dotfiles/hypr/scripts/workspace.sh; force = true; executable = true; };
+  xdg.configFile."hypr/scripts/move-windows.sh" = { source = ./dotfiles/hypr/scripts/move-windows.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/toggle-special.sh" = { source = ./dotfiles/hypr/scripts/toggle-special.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/cycle-audio-source.sh" = { source = ./dotfiles/hypr/scripts/cycle-audio-source.sh; force = true; executable = true; };
   xdg.configFile."kitty/kitty.conf" = { source = ./dotfiles/kitty/kitty.conf; force = true; };

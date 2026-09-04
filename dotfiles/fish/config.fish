@@ -21,6 +21,7 @@ alias grep="grep --color=auto"
 alias scheme="caelestia scheme"
 alias restart-caelestia="restart-caelestia"
 alias caelestia-restart="restart-caelestia"
+alias move-windows="$HOME/.config/hypr/scripts/move-windows.sh"
 
 function restart-caelestia --description "Reiniciar a barra e interface do Caelestia"
     echo "🔄 Reiniciando Caelestia Shell..."
