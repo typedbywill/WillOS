@@ -18,6 +18,7 @@ in
   home.packages = with pkgs; [
     chatgpt
     mission-center
+    nwg-displays
     firefox
     keepassxc
     vscode
@@ -66,6 +67,17 @@ in
     fuzzel
     libsecret
   ];
+
+  xdg.desktopEntries.nwg-displays = {
+    name = "Monitores";
+    genericName = "Configuração de monitores";
+    comment = "Ajuste a posição, resolução, escala e orientação das telas";
+    exec = "${pkgs.nwg-displays}/bin/nwg-displays";
+    icon = "nwg-displays";
+    terminal = false;
+    categories = [ "Settings" "HardwareSettings" ];
+    settings.Keywords = "monitores;telas;resolução;escala;displays;monitors;resolution;scale;";
+  };
 
   # Variáveis de sessão do usuário
   home.sessionVariables = {
@@ -123,7 +135,7 @@ in
     force = true;
     text = builtins.replaceStrings
       [ "@WILLOS_MONITORS@" "@WILLOS_XKB_LAYOUT@" ]
-      [ localSettings.hyprlandMonitors localSettings.xkbLayout ]
+      [ "source = ~/.config/hypr/monitors.conf" localSettings.xkbLayout ]
       (builtins.readFile ./dotfiles/hypr/hyprland.conf);
   };
   xdg.configFile."hypr/hyprlock.conf" = {
@@ -162,6 +174,17 @@ in
   xdg.configFile."htop/htoprc" = { source = ./dotfiles/htop/htoprc; force = true; };
   xdg.configFile."dolphinrc" = { source = ./dotfiles/dolphin/dolphinrc; force = true; };
   xdg.dataFile."kxmlgui5/dolphin/dolphinui.rc" = { source = ./dotfiles/dolphin/dolphinui.rc; force = true; };
+
+  # Inicializa um arquivo local editável pelo nwg-displays sem sobrescrever os ajustes.
+  home.activation.ensureHyprMonitors =
+    lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+      monitor_file="${config.xdg.configHome}/hypr/monitors.conf"
+      if [ ! -e "$monitor_file" ] && [ ! -L "$monitor_file" ]; then
+        run ${pkgs.coreutils}/bin/install -Dm644 \
+          ${pkgs.writeText "hyprland-monitors.conf" localSettings.hyprlandMonitors} \
+          "$monitor_file"
+      fi
+    '';
 
   # Sincronização automática do tema Caelestia para o KDE/Dolphin na ativação
   home.activation.syncKde = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

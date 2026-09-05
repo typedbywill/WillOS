@@ -21,6 +21,7 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada como uma **plat
 - **O que fica LOCALMENTE e nunca é sincronizado pelo Git**:
   - `hardware-configuration.nix` *(ignorado no Git)*: Gerado pelo `nixos-generate-config` na própria máquina com os UUIDs das partições e módulos de boot daquela placa-mãe.
   - `local-config.nix` *(ignorado no Git)*: Hostname, GPU, usuário, nome/e-mail do Git, diretórios home/repositório, locale, fuso horário, teclado, monitores, workspaces e demais opções particulares desta instalação (veja `local-config.example.nix`).
+  - `~/.config/hypr/monitors.conf`: Configuração editável de monitores, inicializada uma única vez a partir de `local-config.nix`. Abra **Monitores** (`nwg-displays`) no menu para ajustar e salvar posição, resolução, escala e orientação das telas. Os próximos rebuilds preservam esse arquivo e os ajustes salvos pelo aplicativo.
 
 As regras são intencionais:
 
