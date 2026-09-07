@@ -116,6 +116,8 @@ in
     dedicatedServer.openFirewall = true;
     localNetworkGameTransfers.openFirewall = true;
   };
+  # Perfil de desempenho e telemetria para jogos (Steam/Proton).
+  programs.gamemode.enable = true;
   security.polkit.enable = true;
   services.gvfs.enable = true;
   services.udisks2.enable = true;
@@ -221,6 +223,7 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    mangohud
     gitFull
     gh
     libsecret
