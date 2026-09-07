@@ -66,6 +66,19 @@ in
         setuid = true;
       };
 
+      # O wrapper é útil para ferramentas em sessão gráfica, mas a criação dos
+      # nós precisa ocorrer como root logo após os módulos do kernel carregarem.
+      systemd.services.nvidia-device-nodes = {
+        description = "Criar nós de dispositivo da NVIDIA";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "systemd-modules-load.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${pkgs.nvidia-modprobe}/bin/nvidia-modprobe -u -c=0";
+        };
+      };
+
       environment.sessionVariables = {
         LIBVA_DRIVER_NAME = "nvidia";
         __GLX_VENDOR_LIBRARY_NAME = "nvidia";
