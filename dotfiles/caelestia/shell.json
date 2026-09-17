@@ -35,5 +35,8 @@
       "lockBeforeSleep": false,
       "timeouts": []
     }
+  },
+  "services": {
+    "defaultPlayer": "Spotify"
   }
 }

@@ -1,0 +1,45 @@
+--- a/services/Players.qml
++++ b/services/Players.qml
+@@ -12,7 +12,7 @@
+     id: root
+ 
+     readonly property list<MprisPlayer> list: Mpris.players.values
+-    readonly property MprisPlayer active: props.manualActive ?? list.find(p => getIdentity(p) === GlobalConfig.services.defaultPlayer) ?? list[0] ?? null
++    readonly property MprisPlayer active: (props.manualActive && list.includes(props.manualActive)) ? props.manualActive : (list.find(p => getIdentity(p) === GlobalConfig.services.defaultPlayer) ?? list[0] ?? null)
+     property alias manualActive: props.manualActive
+ 
+     // Dedup key for progressive metadata (e.g. mpv-mpris/yt-dlp player fills title then artist later).
+@@ -90,6 +90,20 @@
+         reloadableId: "players"
+     }
+ 
++    Variants {
++        model: root.list
++
++        Connections {
++            required property MprisPlayer modelData
++            target: modelData
++
++            function onIsPlayingChanged(): void {
++                if (modelData && modelData.isPlaying)
++                    props.manualActive = modelData;
++            }
++        }
++    }
++
+     // qmllint disable unresolved-type
+     CustomShortcut {
+         // qmllint enable unresolved-type
+@@ -178,6 +192,12 @@
+             root.active?.stop();
+         }
+ 
++        function setActive(identity: string): void {
++            const found = root.list.find(p => root.getIdentity(p).toLowerCase() === identity.toLowerCase() || p.identity.toLowerCase() === identity.toLowerCase());
++            if (found)
++                props.manualActive = found;
++        }
++
+         target: "mpris"
+     }
+ }
