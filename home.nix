@@ -49,6 +49,10 @@ in
     kdePackages.kdegraphics-thumbnailers
     kdePackages.ffmpegthumbs
     kdePackages.ark
+    kdePackages.gwenview
+    kdePackages.okular
+    mpv
+    adw-gtk3
     libnotify
     nmap
     nodejs
@@ -87,6 +91,8 @@ in
     QT_QPA_PLATFORM = "wayland;xcb";
     QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
     GTK_USE_PORTAL = "1";
+    NIXOS_OZONE_WL = "1";
+    ELECTRON_OZONE_PLATFORM_HINT = "auto";
   };
 
   # Configuração Qt para integração visual nativa com Caelestia
@@ -96,7 +102,54 @@ in
     style.name = "breeze";
   };
 
-  # Associação de arquivos e protocolos para o navegador padrão e gerenciador de arquivos
+  # Configuração GTK declarativa com Dark Mode harmonizado ao WhiteSur e Caelestia
+  gtk = {
+    enable = true;
+    theme = {
+      name = "adw-gtk3-dark";
+      package = pkgs.adw-gtk3;
+    };
+    iconTheme = {
+      name = "WhiteSur-dark";
+      package = pkgs.whitesur-icon-theme;
+    };
+    cursorTheme = {
+      name = "Bibata-Modern-Ice";
+      size = 24;
+    };
+    font = {
+      name = "SF Pro Display";
+      size = 11;
+    };
+    gtk3.extraConfig = {
+      gtk-application-prefer-dark-theme = 1;
+    };
+    gtk4.extraConfig = {
+      gtk-application-prefer-dark-theme = 1;
+    };
+    gtk3.bookmarks = [
+      "file://${config.home.homeDirectory}/Documents Documents"
+      "file://${config.home.homeDirectory}/Downloads Downloads"
+      "file://${config.home.homeDirectory}/Pictures Pictures"
+      "file://${config.home.homeDirectory}/Music Music"
+      "file://${config.home.homeDirectory}/Videos Videos"
+      "file://${config.home.homeDirectory}/Projects Projects"
+    ];
+  };
+
+  # Padronização de chaves dconf para o ecossistema GNOME / GTK
+  dconf.settings = {
+    "org/gnome/desktop/interface" = {
+      color-scheme = "prefer-dark";
+      gtk-theme = "adw-gtk3-dark";
+      icon-theme = "WhiteSur-dark";
+      cursor-theme = "Bibata-Modern-Ice";
+      cursor-size = 24;
+      font-name = "SF Pro Display 11";
+    };
+  };
+
+  # Associação de arquivos e protocolos para navegador, mídias e utilitários
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
@@ -106,6 +159,38 @@ in
       "x-scheme-handler/https" = "firefox.desktop";
       "x-scheme-handler/about" = "firefox.desktop";
       "x-scheme-handler/unknown" = "firefox.desktop";
+
+      # Visualizador de Imagens
+      "image/png" = "org.kde.gwenview.desktop";
+      "image/jpeg" = "org.kde.gwenview.desktop";
+      "image/jpg" = "org.kde.gwenview.desktop";
+      "image/gif" = "org.kde.gwenview.desktop";
+      "image/webp" = "org.kde.gwenview.desktop";
+      "image/bmp" = "org.kde.gwenview.desktop";
+      "image/svg+xml" = "org.kde.gwenview.desktop";
+      "image/tiff" = "org.kde.gwenview.desktop";
+
+      # Reprodutor de Vídeo
+      "video/mp4" = "mpv.desktop";
+      "video/mkv" = "mpv.desktop";
+      "video/x-matroska" = "mpv.desktop";
+      "video/webm" = "mpv.desktop";
+      "video/quicktime" = "mpv.desktop";
+      "video/x-msvideo" = "mpv.desktop";
+      "video/x-flv" = "mpv.desktop";
+
+      # Documentos e PDFs
+      "application/pdf" = "org.kde.okular.desktop";
+      "application/epub+zip" = "org.kde.okular.desktop";
+
+      # Arquivos Compactados
+      "application/zip" = "org.kde.ark.desktop";
+      "application/x-tar" = "org.kde.ark.desktop";
+      "application/x-compressed-tar" = "org.kde.ark.desktop";
+      "application/x-bzip-compressed-tar" = "org.kde.ark.desktop";
+      "application/x-xz-compressed-tar" = "org.kde.ark.desktop";
+      "application/x-7z-compressed" = "org.kde.ark.desktop";
+      "application/x-rar" = "org.kde.ark.desktop";
     };
   };
 
@@ -216,31 +301,6 @@ State=AAAA/wAAAAD9AAAAAwAAAAAAAAAAAAAAAPwCAAAAAvsAAAAUAHAAbABhAGMAZQBzAEQAbwBjAG
 EOF
   '';
 
-  # Configuração de temas GTK, Marcadores e Cursor
-  gtk = {
-    enable = true;
-    font = {
-      name = "SF Pro Display";
-      size = 11;
-    };
-    iconTheme = {
-      # WhiteSur replica a linguagem visual de ícones do macOS (Big Sur).
-      name = "WhiteSur-dark";
-      package = pkgs.whitesur-icon-theme;
-    };
-    cursorTheme = {
-      name = "Bibata-Modern-Ice";
-      size = 24;
-    };
-    gtk3.bookmarks = [
-      "file://${config.home.homeDirectory}/Documents Documents"
-      "file://${config.home.homeDirectory}/Downloads Downloads"
-      "file://${config.home.homeDirectory}/Pictures Pictures"
-      "file://${config.home.homeDirectory}/Music Music"
-      "file://${config.home.homeDirectory}/Videos Videos"
-      "file://${config.home.homeDirectory}/Projects Projects"
-    ];
-  };
 
   home.pointerCursor = {
     enable = true;

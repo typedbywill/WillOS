@@ -235,6 +235,7 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    hyprpolkitagent
     mangohud
     gitFull
     gh
@@ -331,6 +332,8 @@ in
     HYPRCURSOR_SIZE = "24";
     TERMINAL = "kitty";
     WILLOS_REPO = local.repositoryDirectory;
+    NIXOS_OZONE_WL = "1";
+    ELECTRON_OZONE_PLATFORM_HINT = "auto";
   };
 
   system.stateVersion = "26.05";
