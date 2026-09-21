@@ -1,5 +1,13 @@
 {
   "appearance": {
+    "transparency": {
+      "enabled": true,
+      "base": 0.58,
+      "layers": 0.4
+    },
+    "rounding": {
+      "scale": 1.35
+    },
     "font": {
       "scale": 1.0,
       "clock": "SF Pro Display",
@@ -26,7 +34,7 @@
   },
   "bar": {
     "workspaces": {
-      "perMonitorWorkspaces": true,
+      "perMonitor": true,
       "shown": 5
     }
   },
