@@ -15,7 +15,7 @@ Esta é a **Camada Base Pública** do sistema. Ela foi projetada como uma **plat
   - Ambiente gráfico (Hyprland, Caelestia Shell, Waybar, temas visuais, esquemas de cores e fontes).
   - Shell Fish, aliases, autocompletes, atalhos de teclado e utilitários do terminal.
   - Programas e associações de arquivos comuns (Home Manager).
-  - Scripts genéricos de comportamento do desktop, display virtual e Sunshine.
+  - Scripts genéricos de comportamento do desktop e display virtual.
   - Módulos do sistema (GPU modular: `intel`, `nvidia`, `amd`, `hybrid-intel-nvidia`).
 
 - **O que fica LOCALMENTE e nunca é sincronizado pelo Git**:
@@ -55,6 +55,8 @@ As regras são intencionais:
 ├── modules/                   # Módulos opcionais do sistema
 │   ├── local-settings.nix     # Contrato genérico das opções locais
 │   ├── gpu.nix                # Gerenciador dinâmico de drivers gráficos (Intel / AMD / Nvidia)
+│   ├── auto-sync.nix          # Sincronização e rebuild automáticos
+│   ├── sunshine.nix           # Servidor opcional de streaming Sunshine
 │   └── spotify-inactivity-watcher.nix # Watcher de inatividade do Spotify
 └── dotfiles/                  # Arquivos de configuração dos utilitários
     ├── hypr/

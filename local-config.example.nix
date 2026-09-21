@@ -43,4 +43,7 @@
   # Opções adicionais para NVIDIA, se aplicável:
   # myHardware.gpu.nvidia.open = false;
   # myHardware.gpu.nvidia.enableContainerToolkit = true;
+
+  # Opcional: Servidor de streaming Sunshine para Moonlight (desabilitado por padrão)
+  # willos.sunshine.enable = true;
 }

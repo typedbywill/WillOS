@@ -8,6 +8,7 @@ in
     ./modules/local-settings.nix
     ./modules/gpu.nix
     ./modules/auto-sync.nix
+    ./modules/sunshine.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -121,6 +122,8 @@ in
   security.polkit.enable = true;
   services.gvfs.enable = true;
   services.udisks2.enable = true;
+  services.upower.enable = true;
+  services.power-profiles-daemon.enable = true;
 
   # Habilita o daemon GNOME Keyring e integração PAM para desbloqueio automático no login
   services.gnome.gnome-keyring.enable = true;
@@ -191,13 +194,6 @@ in
     openFirewall = true;
   };
 
-  # Servidor de streaming e acesso remoto Sunshine
-  services.sunshine = {
-    enable = true;
-    autoStart = true;
-    capSysAdmin = true;
-    openFirewall = true;
-  };
 
   xdg.portal = {
     enable = true;

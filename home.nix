@@ -255,6 +255,10 @@ in
   xdg.configFile."fish/config.fish" = { source = ./dotfiles/fish/config.fish; force = true; };
   xdg.configFile."scripts/rebuild.sh" = { source = ./scripts/rebuild.sh; force = true; executable = true; };
   xdg.configFile."fastfetch/config.jsonc" = { source = ./dotfiles/fastfetch/config.jsonc; force = true; };
+  xdg.configFile."fastfetch/tux.png" = { source = ./dotfiles/fastfetch/tux.png; force = true; };
+  xdg.configFile."fastfetch/tux.txt" = { source = ./dotfiles/fastfetch/tux.txt; force = true; };
+  xdg.configFile."fastfetch/glados.txt" = { source = ./dotfiles/fastfetch/glados.txt; force = true; };
+  xdg.configFile."fastfetch/aperture.txt" = { source = ./dotfiles/fastfetch/aperture.txt; force = true; };
   xdg.configFile."fuzzel/fuzzel.ini" = { source = ./dotfiles/fuzzel/fuzzel.ini; force = true; };
   xdg.configFile."cava/config" = { source = ./dotfiles/cava/config; force = true; };
   xdg.configFile."htop/htoprc" = { source = ./dotfiles/htop/htoprc; force = true; };

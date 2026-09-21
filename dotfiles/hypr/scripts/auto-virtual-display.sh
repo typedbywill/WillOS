@@ -41,11 +41,13 @@ wait_for_hyprland() {
     done
 }
 
-# Reinicia Sunshine para atualizar a captura e lista de monitores
+# Reinicia Sunshine para atualizar a captura e lista de monitores (se o serviço estiver instalado)
 restart_sunshine() {
-    log "Reiniciando serviço Sunshine para atualizar lista de monitores..."
-    systemctl --user reset-failed sunshine.service 2>/dev/null || true
-    systemctl --user restart sunshine.service 2>/dev/null || true
+    if systemctl --user list-unit-files sunshine.service 2>/dev/null | grep -q "^sunshine\.service"; then
+        log "Reiniciando serviço Sunshine para atualizar lista de monitores..."
+        systemctl --user reset-failed sunshine.service 2>/dev/null || true
+        systemctl --user restart sunshine.service 2>/dev/null || true
+    fi
 }
 
 # Resgata janelas e workspaces órfãos quando um monitor é desconectado
