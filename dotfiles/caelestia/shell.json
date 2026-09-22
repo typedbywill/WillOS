@@ -2,8 +2,8 @@
   "appearance": {
     "transparency": {
       "enabled": true,
-      "base": 0.58,
-      "layers": 0.4
+      "base": 0.85,
+      "layers": 0.7
     },
     "rounding": {
       "scale": 1.35
