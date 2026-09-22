@@ -119,6 +119,11 @@ in
   };
   # Perfil de desempenho e telemetria para jogos (Steam/Proton).
   programs.gamemode.enable = true;
+
+  # Gravador de tela acelerado por GPU (utilizado pelo Caelestia Shell)
+  # Configura wrappers com cap_sys_admin para capturar a tela via KMS sem necessitar de root/pkexec
+  programs.gpu-screen-recorder.enable = true;
+
   security.polkit.enable = true;
   services.gvfs.enable = true;
   services.udisks2.enable = true;
