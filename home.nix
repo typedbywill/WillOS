@@ -20,6 +20,7 @@ in
     mission-center
     nwg-displays
     firefox
+    google-chrome
     keepassxc
     vscode
     code-cursor
