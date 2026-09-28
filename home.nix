@@ -266,6 +266,7 @@ in
   xdg.configFile."cava/config" = { source = ./dotfiles/cava/config; force = true; };
   xdg.configFile."htop/htoprc" = { source = ./dotfiles/htop/htoprc; force = true; };
   xdg.configFile."dolphinrc" = { source = ./dotfiles/dolphin/dolphinrc; force = true; };
+  xdg.configFile."wireplumber/wireplumber.conf.d/50-follow-default.conf" = { source = ./dotfiles/wireplumber/wireplumber.conf.d/50-follow-default.conf; force = true; };
   xdg.dataFile."kxmlgui5/dolphin/dolphinui.rc" = { source = ./dotfiles/dolphin/dolphinui.rc; force = true; };
 
   # Inicializa um arquivo local editável pelo nwg-displays sem sobrescrever os ajustes.
