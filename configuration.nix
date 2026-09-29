@@ -2,6 +2,7 @@
 
 let
   local = config.willos.local;
+  wacli = pkgs.callPackage ./pkgs/wacli.nix {};
 in
 {
   imports = [
@@ -236,6 +237,7 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    wacli
     hyprpolkitagent
     mangohud
     gitFull
