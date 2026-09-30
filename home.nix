@@ -2,6 +2,7 @@
 
 let
   chatgpt = pkgs.callPackage ./pkgs/chatgpt.nix {};
+  grok-bot = pkgs.callPackage ./pkgs/grok-bot.nix {};
   winbox = pkgs.callPackage ./pkgs/winbox.nix {};
   mysql-workbench = pkgs.callPackage ./pkgs/mysql-workbench.nix {};
 in
@@ -17,6 +18,7 @@ in
   # Pacotes específicos do usuário
   home.packages = with pkgs; [
     chatgpt
+    grok-bot
     mission-center
     nwg-displays
     firefox
