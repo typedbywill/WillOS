@@ -3,8 +3,8 @@
 # ==============================================================================
 # Auto Virtual Display & Window Rescue Manager for Hyprland
 # 
-# 1. Cria automaticamente um monitor virtual headless (1920x1080) quando nenhum
-#    monitor físico estiver conectado, e remove o monitor virtual automaticamente
+# 1. Cria automaticamente um monitor virtual headless (1920x1080@60 scale 1) quando
+#    nenhum monitor físico estiver conectado, e remove o monitor virtual automaticamente
 #    quando o monitor físico for reconectado.
 # 2. Resgata e redireciona automaticamente aplicativos e workspaces para um
 #    monitor conectado quando qualquer monitor for desconectado.
@@ -16,8 +16,9 @@ PIDFILE="/run/user/$(id -u)/auto-virtual-display.pid"
 LOCK_FILE="/run/user/$(id -u)/auto-virtual-display.lock"
 TRIGGER_FILE="/run/user/$(id -u)/auto-virtual-display.trigger"
 
-# Garante instância única
-if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; then
+# Garante instância única via flock
+exec 201>"$PIDFILE"
+if ! flock -n 201; then
     exit 0
 fi
 echo $$ > "$PIDFILE"
@@ -63,12 +64,12 @@ rescue_orphaned_windows() {
     local workspaces_json
     workspaces_json=$(hyprctl -j workspaces 2>/dev/null)
 
-    # Obter monitor alvo (focado ou primeiro conectado) e seu workspace ativo
+    # Obter monitor alvo (focado ou primeiro conectado que não seja FALLBACK) e seu workspace ativo
     local target_mon target_ws
-    target_mon=$(echo "$monitors_json" | jq -r '(.[] | select(.focused == true) | .name) // .[0].name')
-    target_ws=$(echo "$monitors_json" | jq -r '(.[] | select(.focused == true) | .activeWorkspace.id) // .[0].activeWorkspace.id')
+    target_mon=$(echo "$monitors_json" | jq -r '(.[] | select(.name != "FALLBACK" and .focused == true) | .name) // (.[] | select(.name != "FALLBACK") | .name) // .[0].name')
+    target_ws=$(echo "$monitors_json" | jq -r '(.[] | select(.name != "FALLBACK" and .focused == true) | .activeWorkspace.id) // (.[] | select(.name != "FALLBACK") | .activeWorkspace.id) // .[0].activeWorkspace.id')
 
-    if [ -z "$target_mon" ] || [ "$target_mon" = "null" ]; then
+    if [ -z "$target_mon" ] || [ "$target_mon" = "null" ] || [ "$target_mon" = "FALLBACK" ]; then
         return
     fi
 
@@ -77,7 +78,6 @@ rescue_orphaned_windows() {
     active_mon_names=$(echo "$monitors_json" | jq '[.[].name]')
 
     # 1. Resgata workspaces órfãos movendo o workspace inteiro para o monitor ativo.
-    # Isso preserva todas as janelas em seus workspaces de origem (ex: WS 1 mantém suas janelas intactas).
     if [ -n "$workspaces_json" ] && [ "$workspaces_json" != "[]" ]; then
         local orphaned_ws_ids
         orphaned_ws_ids=$(echo "$workspaces_json" | jq -r --argjson active_names "$active_mon_names" '
@@ -114,25 +114,26 @@ sync_monitors() {
     
     # Se hyprctl não retornar nada ou array vazio
     if [ -z "$monitors_json" ] || [ "$monitors_json" = "[]" ]; then
-        log "Nenhum monitor ativo detectado no Hyprland. Criando monitor virtual 1080p..."
+        log "Nenhum monitor ativo detectado no Hyprland. Criando monitor virtual HEADLESS 1080p..."
         hyprctl output create headless
-        sleep 0.5
+        sleep 0.3
+        hyprctl keyword monitor "HEADLESS-1,1920x1080@60,0x0,1"
         restart_sunshine
         return
     fi
 
-    # Filtra nomes de monitores físicos e virtuais (HEADLESS-* / FALLBACK-*)
+    # Filtra nomes de monitores físicos (exclui HEADLESS* e FALLBACK*) e virtuais (apenas HEADLESS*)
     local physical_names=""
     local headless_names=""
     if command -v jq >/dev/null 2>&1; then
-        physical_names=$(echo "$monitors_json" | jq -r '.[] | select((.name | startswith("HEADLESS-") or startswith("FALLBACK-")) | not) | .name')
-        headless_names=$(echo "$monitors_json" | jq -r '.[] | select(.name | startswith("HEADLESS-") or startswith("FALLBACK-")) | .name')
+        physical_names=$(echo "$monitors_json" | jq -r '.[] | select((.name | (startswith("HEADLESS") or startswith("FALLBACK"))) | not) | .name')
+        headless_names=$(echo "$monitors_json" | jq -r '.[] | select(.name | startswith("HEADLESS")) | .name')
     elif command -v node >/dev/null 2>&1; then
-        physical_names=$(node -e 'JSON.parse(process.argv[1]).filter(m => !m.name.startsWith("HEADLESS-") && !m.name.startsWith("FALLBACK-")).forEach(m => console.log(m.name))' "$monitors_json")
-        headless_names=$(node -e 'JSON.parse(process.argv[1]).filter(m => m.name.startsWith("HEADLESS-") || m.name.startsWith("FALLBACK-")).forEach(m => console.log(m.name))' "$monitors_json")
+        physical_names=$(node -e 'JSON.parse(process.argv[1]).filter(m => !m.name.startsWith("HEADLESS") && !m.name.startsWith("FALLBACK")).forEach(m => console.log(m.name))' "$monitors_json")
+        headless_names=$(node -e 'JSON.parse(process.argv[1]).filter(m => m.name.startsWith("HEADLESS")).forEach(m => console.log(m.name))' "$monitors_json")
     else
-        physical_names=$(echo "$monitors_json" | grep -o '"name": *"[^"]*"' | sed -E 's/.*"name": *"([^"]+)".*/\1/' | grep -v -E '^(HEADLESS-|FALLBACK-)' || true)
-        headless_names=$(echo "$monitors_json" | grep -o '"name": *"(HEADLESS-|FALLBACK-)[^"]*"' | sed -E 's/.*"name": *"([^"]+)".*/\1/' || true)
+        physical_names=$(echo "$monitors_json" | grep -o '"name": *"[^"]*"' | sed -E 's/.*"name": *"([^"]+)".*/\1/' | grep -v -E '^(HEADLESS|FALLBACK)' || true)
+        headless_names=$(echo "$monitors_json" | grep -o '"name": *"HEADLESS[^"]*"' | sed -E 's/.*"name": *"([^"]+)".*/\1/' || true)
     fi
 
     local physical_count
@@ -143,9 +144,10 @@ sync_monitors() {
     if [ "$physical_count" -eq 0 ]; then
         # Sem monitor físico: se ainda não houver nenhum headless, cria um
         if [ "$headless_count" -eq 0 ]; then
-            log "Monitor físico desconectado. Criando monitor virtual HEADLESS (1920x1080)..."
+            log "Monitor físico desconectado. Criando monitor virtual HEADLESS (1920x1080@60)..."
             hyprctl output create headless
-            sleep 0.5
+            sleep 0.3
+            hyprctl keyword monitor "HEADLESS-1,1920x1080@60,0x0,1"
             rescue_orphaned_windows
             restart_sunshine
         fi
@@ -194,9 +196,6 @@ wait_for_hyprland
 
 # Verificação inicial na inicialização
 sync_monitors
-
-# Garante que o Sunshine tenha o monitor correto e inicializado após o boot
-restart_sunshine
 
 # Loop contínuo escutando o socket de eventos do Hyprland
 while true; do
