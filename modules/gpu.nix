@@ -22,6 +22,11 @@ in
         description = "Usar módulo de kernel open-source da NVIDIA";
       };
     };
+    aqDrmDevices = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Ordem de prioridade de GPUs para Aquamarine/Hyprland (AQ_DRM_DEVICES)";
+    };
   };
 
   config = lib.mkMerge [
@@ -95,6 +100,13 @@ in
       hardware.graphics.extraPackages32 = with pkgs; [
         driversi686Linux.amdvlk
       ];
+    })
+
+    # Prioridade de GPUs para Aquamarine/Hyprland
+    (lib.mkIf (cfg.aqDrmDevices != null) {
+      environment.sessionVariables = {
+        AQ_DRM_DEVICES = cfg.aqDrmDevices;
+      };
     })
   ];
 }

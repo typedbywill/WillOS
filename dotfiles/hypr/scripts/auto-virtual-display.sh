@@ -28,12 +28,34 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [auto-virtual-display] $*"
 }
 
+# Procura e atualiza a assinatura e socket do Hyprland ativo
+update_hyprland_instance() {
+    if [ -n "$HYPRLAND_INSTANCE_SIGNATURE" ] && hyprctl version >/dev/null 2>&1; then
+        return 0
+    fi
+
+    local s dir sig
+    for s in $(find "$XDG_RUNTIME_DIR/hypr" -name ".socket.sock" -printf "%T@ %p\n" 2>/dev/null | sort -nr | awk '{print $2}'); do
+        dir=$(dirname "$s")
+        sig=$(basename "$dir")
+        if HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl version >/dev/null 2>&1; then
+            export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+            log "Instância ativa do Hyprland identificada: $HYPRLAND_INSTANCE_SIGNATURE"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Aguarda o Hyprland IPC estar pronto
 wait_for_hyprland() {
     local max_attempts=50
     local attempt=0
-    while ! hyprctl version >/dev/null 2>&1; do
-        sleep 0.1
+    while true; do
+        if update_hyprland_instance; then
+            break
+        fi
+        sleep 0.2
         attempt=$((attempt + 1))
         if [ "$attempt" -ge "$max_attempts" ]; then
             log "Aviso: Timeout aguardando IPC do Hyprland."
@@ -109,6 +131,7 @@ rescue_orphaned_windows() {
 
 # Sincroniza o estado dos monitores
 sync_monitors() {
+    update_hyprland_instance || return
     local monitors_json
     monitors_json=$(hyprctl -j monitors 2>/dev/null)
     
@@ -199,10 +222,12 @@ sync_monitors
 
 # Loop contínuo escutando o socket de eventos do Hyprland
 while true; do
-    SOCKET="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
-    if [ ! -S "$SOCKET" ]; then
-        SOCKET=$(find "$XDG_RUNTIME_DIR/hypr" -name ".socket2.sock" 2>/dev/null | head -n 1)
+    if ! update_hyprland_instance; then
+        sleep 1
+        continue
     fi
+
+    SOCKET="$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock"
 
     if [ -n "$SOCKET" ] && [ -S "$SOCKET" ]; then
         log "Conectado ao socket de eventos do Hyprland: $SOCKET"
@@ -226,6 +251,7 @@ while true; do
         fi
     fi
 
-    # Se desconectar (ex: reload do Hyprland), aguarda e tenta reconectar
-    sleep 2
+    # Se desconectar (ex: reload/crash do Hyprland), aguarda e revalida a assinatura
+    sleep 1
+    unset HYPRLAND_INSTANCE_SIGNATURE
 done
