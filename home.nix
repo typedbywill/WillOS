@@ -220,6 +220,13 @@ in
   };
 
   # Gerenciamento de dotfiles declarativos
+  xdg.configFile."uwsm/env" = {
+    force = true;
+    text = ''
+      export AQ_DRM_DEVICES="/dev/dri/nvidia-card:/dev/dri/amd-card"
+    '';
+  };
+
   xdg.configFile."hypr/hyprland.conf" = {
     force = true;
     text = builtins.replaceStrings

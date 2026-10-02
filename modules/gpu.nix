@@ -24,7 +24,7 @@ in
     };
     aqDrmDevices = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = null;
+      default = if (cfg.type == "nvidia" || cfg.type == "hybrid-intel-nvidia") then "/dev/dri/nvidia-card:/dev/dri/amd-card" else null;
       description = "Ordem de prioridade de GPUs para Aquamarine/Hyprland (AQ_DRM_DEVICES)";
     };
   };
