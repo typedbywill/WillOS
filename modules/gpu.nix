@@ -36,6 +36,13 @@ in
         enable = true;
         enable32Bit = true;
       };
+
+      # Symlinks previsíveis e sem ':' para GPUs (evita conflito de parsing no Aquamarine/Hyprland)
+      services.udev.extraRules = ''
+        KERNEL=="card*", SUBSYSTEM=="drm", ATTRS{vendor}=="0x10de", SYMLINK+="dri/nvidia-card"
+        KERNEL=="card*", SUBSYSTEM=="drm", ATTRS{vendor}=="0x1002", SYMLINK+="dri/amd-card"
+        KERNEL=="card*", SUBSYSTEM=="drm", ATTRS{vendor}=="0x8086", SYMLINK+="dri/intel-card"
+      '';
     }
 
     # Configuração Intel
