@@ -11,6 +11,30 @@ in
     ./modules/spotify-inactivity-watcher.nix
   ];
 
+  systemd.user.services.agent-proxy = {
+    Unit = {
+      Description = "Agent Proxy";
+      After = [ "network.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = pkgs.writeShellScript "agent-proxy-service-runner" ''
+        if [ -f "$HOME/Documents/projetos/pessoal/agent-proxy/src/server.js" ]; then
+          exec ${pkgs.nodejs}/bin/node "$HOME/Documents/projetos/pessoal/agent-proxy/src/server.js"
+        else
+          exec ${pkgs.nodejs}/bin/node ${inputs.agent-proxy}/src/server.js
+        fi
+      '';
+      Restart = "always";
+      RestartSec = 3;
+      Environment = [
+        "NODE_ENV=production"
+        "AGENT_PROXY_PORT=8080"
+      ];
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
   home.username = localSettings.username;
   home.homeDirectory = localSettings.homeDirectory;
   home.stateVersion = "26.05";
@@ -67,6 +91,20 @@ in
     scrcpy
     winbox
     socat
+    (pkgs.writeShellScriptBin "agent-proxy-server" ''
+      if [ -f "$HOME/Documents/projetos/pessoal/agent-proxy/src/server.js" ]; then
+        exec ${pkgs.nodejs}/bin/node "$HOME/Documents/projetos/pessoal/agent-proxy/src/server.js" "$@"
+      else
+        exec ${pkgs.nodejs}/bin/node ${inputs.agent-proxy}/src/server.js "$@"
+      fi
+    '')
+    (pkgs.writeShellScriptBin "agent-proxy" ''
+      if [ -f "$HOME/Documents/projetos/pessoal/agent-proxy/bin/agent-proxy" ]; then
+        exec ${pkgs.bash}/bin/bash "$HOME/Documents/projetos/pessoal/agent-proxy/bin/agent-proxy" "$@"
+      else
+        exec ${pkgs.bash}/bin/bash ${inputs.agent-proxy}/bin/agent-proxy "$@"
+      fi
+    '')
     jq
     xdg-user-dirs
     cliphist

@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "agent-proxy": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791921035,
+        "narHash": "sha256-lINu6rrLk3eno4NLBw+oyslrYajVWwaIsSK5igwzrPo=",
+        "owner": "typedbywill",
+        "repo": "agent-proxy",
+        "rev": "02dadb3529f8b7348336f90cd4c391e9f5fa57a0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "typedbywill",
+        "repo": "agent-proxy",
+        "type": "github"
+      }
+    },
     "apple-fonts": {
       "inputs": {
         "ci": "ci",
@@ -241,6 +257,7 @@
     },
     "root": {
       "inputs": {
+        "agent-proxy": "agent-proxy",
         "apple-fonts": "apple-fonts",
         "caelestia-cli": "caelestia-cli",
         "caelestia-shell": "caelestia-shell",
