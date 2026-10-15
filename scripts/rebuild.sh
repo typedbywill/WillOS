@@ -1136,7 +1136,26 @@ main() {
         fi
     fi
 
-    if ! run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema..." sudo FLAKE_DIR="$REPO_DIR" nixos-rebuild "$action" --impure --flake "$REPO_DIR#willos" "${rebuild_args[@]}"; then
+    local rebuild_success=false
+    if run_with_dynamic_hud "Motor de Rebuild do WillOS" "Iniciando compilação do sistema..." sudo FLAKE_DIR="$REPO_DIR" nixos-rebuild "$action" --impure --flake "$REPO_DIR#willos" "${rebuild_args[@]}"; then
+        rebuild_success=true
+    else
+        local persistent_log="/tmp/willos-rebuild.log"
+        # Auto-recuperação resiliente para discrepância de narHash em fontes Apple / devimages
+        if [ -f "$persistent_log" ] && grep -qiE "narHash mismatch|hash mismatch.*(devimages|apple)|devimages-cdn\.apple\.com|apple-fonts" "$persistent_log" 2>/dev/null; then
+            print_substep "🔄" "${C_YELLOW}Detectada discrepância de narHash em imagens/fontes da Apple (devimages).${C_RESET}"
+            print_substep "🛠️" "Sincronizando e atualizando hashes dos inputs de fontes da Apple no Flake..."
+            if nix flake update apple-fonts --flake "$REPO_DIR" >/dev/null 2>&1 || nix flake lock --update-input apple-fonts "$REPO_DIR" >/dev/null 2>&1; then
+                run_git -C "$REPO_DIR" add flake.lock >/dev/null 2>&1 || true
+                print_substep "✔" "${C_GREEN}Hashes da Apple dev images atualizados com sucesso no flake.lock. Retentando rebuild...${C_RESET}"
+                if run_with_dynamic_hud "Motor de Rebuild do WillOS (Recuperação Apple)" "Recompilando sistema após atualização dos hashes..." sudo FLAKE_DIR="$REPO_DIR" nixos-rebuild "$action" --impure --flake "$REPO_DIR#willos" "${rebuild_args[@]}"; then
+                    rebuild_success=true
+                fi
+            fi
+        fi
+    fi
+
+    if [ "$rebuild_success" = false ]; then
         print_step_fail "Falha durante a reconstrução do WillOS."
         play_sound "error"
         send_notify "critical" "❌ Erro no Rebuild WillOS" "A compilação do sistema falhou. Verifique os logs no terminal."
@@ -1144,12 +1163,16 @@ main() {
         local persistent_log="/tmp/willos-rebuild.log"
         local is_oom=false
         local is_boot_err=false
+        local is_hash_err=false
         if [ -f "$persistent_log" ]; then
             if grep -qiE "SIGKILL|died with <Signals\.SIGKILL|out of memory|oom-killer|Killed" "$persistent_log" 2>/dev/null; then
                 is_oom=true
             fi
             if grep -qiE "efiSysMountPoint.*not a mounted partition|Failed to install bootloader|check-mountpoints" "$persistent_log" 2>/dev/null; then
                 is_boot_err=true
+            fi
+            if grep -qiE "narHash mismatch|hash mismatch.*(devimages|apple)|devimages-cdn\.apple\.com|apple-fonts" "$persistent_log" 2>/dev/null; then
+                is_hash_err=true
             fi
         fi
 
@@ -1172,6 +1195,15 @@ main() {
             echo -e "${C_RED}║${C_RESET}      2. ${C_CYAN}Monte a partição EFI em /boot:${C_RESET}                                       ${C_RED}║${C_RESET}"
             echo -e "${C_RED}║${C_RESET}         ${C_BOLD}sudo mount /boot${C_RESET}  ${C_MUTED}(ou: sudo mount /dev/sda1 /boot)${C_RESET}                     ${C_RED}║${C_RESET}"
             echo -e "${C_RED}║${C_RESET}      3. ${C_CYAN}Reexecute:${C_RESET} ${C_BOLD}rebuild${C_RESET}                                                     ${C_RED}║${C_RESET}"
+        elif [ "$is_hash_err" = true ]; then
+            echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}  🚨  ${C_BOLD}${C_RED}ERRO DE HASH/NARHASH: APPLE DEV IMAGES / FONTES${C_RESET}                       ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}A Apple atualizou arquivos DMG no CDN (devimages), gerando divergência${C_RESET}   ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}com o narHash bloqueado na configuração.${C_RESET}                                ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      💡 ${C_BOLD}Como resolver este problema:${C_RESET}                                          ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      1. ${C_CYAN}Atualize o input de fontes da Apple no Flake:${C_RESET}                             ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}         ${C_BOLD}nix flake update apple-fonts${C_RESET}                                        ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      2. ${C_CYAN}Reexecute:${C_RESET} ${C_BOLD}rebuild${C_RESET}                                                     ${C_RED}║${C_RESET}"
         elif [ "$is_oom" = true ]; then
             echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
             echo -e "${C_RED}║${C_RESET}  🚨  ${C_BOLD}${C_RED}ERRO CRÍTICO: PROCESSO MORTO POR FALTA DE MEMÓRIA (OOM / SIGKILL: 9)${C_RESET}  ${C_RED}║${C_RESET}"
