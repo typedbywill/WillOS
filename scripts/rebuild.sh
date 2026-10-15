@@ -521,6 +521,20 @@ assert_local_files_are_private() {
     done
 }
 
+# Impede vazamento de configurações específicas de hardware na base pública
+assert_no_local_hardware_leak() {
+    local leaks
+    leaks=$(grep -rnE "^[[:space:]]*(env[[:space:]]*=[[:space:]]*AQ_DRM_DEVICES|export[[:space:]]+AQ_DRM_DEVICES)" \
+        "$REPO_DIR/dotfiles" "$REPO_DIR/home.nix" "$REPO_DIR/configuration.nix" 2>/dev/null || true)
+    if [ -n "$leaks" ]; then
+        echo -e "${C_RED}✖ Erro de Isolamento: Configuração estática de GPU detectada na base pública!${C_RESET}" >&2
+        echo -e "${C_YELLOW}$leaks${C_RESET}" >&2
+        echo -e "${C_MUTED}A base pública é universal e compartilhada entre máquinas Intel, AMD e Nvidia.${C_RESET}" >&2
+        echo -e "${C_MUTED}Use 'myHardware.gpu.type' no 'local-config.nix' e gerencie pelo 'modules/gpu.nix'.${C_RESET}" >&2
+        exit 1
+    fi
+}
+
 # Extrai a lista de partições e sistemas de arquivos do hardware-configuration.nix local
 parse_host_disks() {
     local hw_file="$REPO_DIR/hardware-configuration.nix"
@@ -965,6 +979,7 @@ main() {
     # Garante que os arquivos locais de hardware estão prontos
     ensure_local_hardware_ready
     assert_local_files_are_private
+    assert_no_local_hardware_leak
 
     # Se modo dry-run / info solicitado, apenas exibe a auditoria e encerra
     if [ "$dry_run" = true ]; then
