@@ -284,6 +284,7 @@ in
     (inputs.caelestia-shell.packages.${pkgs.stdenv.hostPlatform.system}.with-cli.overrideAttrs (old: {
       patches = (old.patches or []) ++ [
         ./patches/caelestia-shell-mru.patch
+        ./patches/caelestia-shell-lockscreen-media.patch
       ];
     }))
     # Os atalhos Super+L e Super+Space usam o executável `caelestia`.

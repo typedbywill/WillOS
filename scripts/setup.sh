@@ -224,7 +224,13 @@ print_header() {
 run_with_dynamic_hud() {
     local title="$1"
     local default_status="$2"
-    shift 2
+    local show_rebuild_progress=false
+    if [ "${3:-}" = "--rebuild-progress" ]; then
+        show_rebuild_progress=true
+        shift 3
+    else
+        shift 2
+    fi
     local cmd=("$@")
 
     local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
@@ -244,6 +250,7 @@ run_with_dynamic_hud() {
     start_t=$(date +%s)
     local i=0
     local status_line="$default_status"
+    local rebuild_phase=0
     local is_interactive=false
     if [ -t 1 ]; then
         is_interactive=true
@@ -288,6 +295,43 @@ run_with_dynamic_hud() {
             elif [ -n "$raw_last" ]; then
                 status_line="$(echo "$raw_last" | cut -c1-55)"
             fi
+
+            if [ "$show_rebuild_progress" = true ]; then
+                if [[ "$raw_last" =~ activating.*configuration|switch-to-configuration|activating\ system ]]; then
+                    rebuild_phase=4
+                elif [[ "$raw_last" =~ building.*\.drv|building\ the\ system\ configuration|these\ [0-9]+\ derivations\ will\ be\ built ]]; then
+                    if (( rebuild_phase < 3 )); then rebuild_phase=3; fi
+                elif [[ "$raw_last" =~ copying.*path|copying\ path|downloading|downloaded|fetching ]]; then
+                    if (( rebuild_phase < 2 )); then rebuild_phase=2; fi
+                elif [[ "$raw_last" =~ eval|evaluating|evaluation|flake\ show|checking\ flake ]]; then
+                    if (( rebuild_phase < 1 )); then rebuild_phase=1; fi
+                fi
+            fi
+        fi
+
+        local progress_line=""
+        if [ "$show_rebuild_progress" = true ]; then
+            local progress_phase="Etapa desconhecida; aguardando saída do Nix"
+            local progress_next="Próximo: avaliação do Flake"
+            case "$rebuild_phase" in
+                1)
+                    progress_phase="1/4 Avaliação do Flake"
+                    progress_next="Próximo: baixar dependências"
+                    ;;
+                2)
+                    progress_phase="2/4 Baixando dependências"
+                    progress_next="Próximo: compilar derivações"
+                    ;;
+                3)
+                    progress_phase="3/4 Compilando derivações"
+                    progress_next="Próximo: ativar configuração"
+                    ;;
+                4)
+                    progress_phase="4/4 Ativando configuração"
+                    progress_next="Depois: calibrar Caelestia (passo 6)"
+                    ;;
+            esac
+            progress_line="${progress_phase} | ${progress_next}"
         fi
 
         # Barra de pulso animada Sci-Fi
@@ -306,7 +350,12 @@ run_with_dynamic_hud() {
         if [ "$is_interactive" = true ]; then
             printf "\r\033[K${C_BORDER}│  ${color}${frame}${C_RESET} ${C_BOLD}${C_CYAN}%-38s${C_RESET} ${C_MUTED}⏱️  %02dm %02ds${C_RESET}\n" "$title" "$min" "$sec"
             printf "\r\033[K${C_BORDER}│  ${C_BORDER}├─ [${C_CYAN}%s${C_BORDER}] ${C_YELLOW}WillOS EM AÇÃO${C_RESET}\n" "$bar"
-            printf "\r\033[K${C_BORDER}│  ${C_BORDER}└─ ${C_MUTED}Status:${C_RESET} ${C_MUTED}%-55s${C_RESET}\033[2A" "$status_line"
+            if [ "$show_rebuild_progress" = true ]; then
+                printf "\r\033[K${C_BORDER}│  ${C_BORDER}├─ ${C_CYAN}%-75s${C_RESET}\n" "$progress_line"
+                printf "\r\033[K${C_BORDER}│  ${C_BORDER}└─ ${C_MUTED}Status:${C_RESET} ${C_MUTED}%-55s${C_RESET}\033[3A" "$status_line"
+            else
+                printf "\r\033[K${C_BORDER}│  ${C_BORDER}└─ ${C_MUTED}Status:${C_RESET} ${C_MUTED}%-55s${C_RESET}\033[2A" "$status_line"
+            fi
         fi
 
         ((i++))
@@ -1273,7 +1322,7 @@ EOF
     fi
 
     local rebuild_success=false
-    if run_with_dynamic_hud "Motor de Instalação WillOS" "Iniciando compilação do sistema..." "${rebuild_cmd[@]}"; then
+    if run_with_dynamic_hud "Motor de Instalação WillOS" "Iniciando compilação do sistema..." --rebuild-progress "${rebuild_cmd[@]}"; then
         rebuild_success=true
     else
         local persistent_log="/tmp/willos-setup.log"
@@ -1284,7 +1333,7 @@ EOF
             if nix flake update apple-fonts --flake "$TARGET_DIR" >/dev/null 2>&1 || nix flake lock --update-input apple-fonts "$TARGET_DIR" >/dev/null 2>&1; then
                 run_git -C "$TARGET_DIR" add flake.lock >/dev/null 2>&1 || true
                 print_substep "✔" "${C_GREEN}Hashes da Apple dev images atualizados com sucesso no flake.lock. Retentando compilação...${C_RESET}"
-                if run_with_dynamic_hud "Motor de Instalação WillOS (Recuperação Apple)" "Recompilando sistema após atualização dos hashes..." "${rebuild_cmd[@]}"; then
+                if run_with_dynamic_hud "Motor de Instalação WillOS (Recuperação Apple)" "Recompilando sistema após atualização dos hashes..." --rebuild-progress "${rebuild_cmd[@]}"; then
                     rebuild_success=true
                 fi
             fi

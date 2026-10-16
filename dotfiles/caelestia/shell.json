@@ -44,6 +44,9 @@
       "timeouts": []
     }
   },
+  "lock": {
+    "hideNotifs": true
+  },
   "services": {
     "defaultPlayer": "Spotify"
   }

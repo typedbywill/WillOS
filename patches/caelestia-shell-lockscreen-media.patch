@@ -1,0 +1,42 @@
+--- a/modules/lock/Media.qml
++++ b/modules/lock/Media.qml
+@@ -74,39 +74,5 @@
+             elide: Text.ElideRight
+         }
+ 
+-        ButtonRow {
+-            Layout.alignment: Qt.AlignHCenter
+-            Layout.topMargin: Tokens.spacing.medium
+-
+-            spacing: Tokens.spacing.extraSmall
+-
+-            IconButton {
+-                type: IconButton.Tonal
+-                icon: "skip_previous"
+-                isRound: true
+-                shapeMorph: true
+-                disabled: !Players.active?.canGoPrevious
+-                onClicked: Players.active?.previous()
+-            }
+-
+-            IconButton {
+-                icon: Players.active?.isPlaying ? "pause" : "play_arrow"
+-                isRound: true
+-                shapeMorph: true
+-                checked: Players.active?.isPlaying ?? false
+-                disabled: !Players.active?.canTogglePlaying
+-                onClicked: Players.active?.togglePlaying()
+-                implicitWidth: implicitHeight + Tokens.padding.largeIncreased * 2
+-            }
+-
+-            IconButton {
+-                type: IconButton.Tonal
+-                icon: "skip_next"
+-                isRound: true
+-                shapeMorph: true
+-                disabled: !Players.active?.canGoNext
+-                onClicked: Players.active?.next()
+-            }
+-        }
+     }
+ }
