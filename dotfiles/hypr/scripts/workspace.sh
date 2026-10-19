@@ -58,22 +58,138 @@ if [ -z "$FOCUSED_MON" ] || ! [[ "$MON_IDX" =~ ^[0-9]+$ ]]; then
 fi
 
 TARGET_WS=$(( (MON_IDX * WS_PER_MONITOR) + NUM ))
+BLOCK_START=$(( (MON_IDX * WS_PER_MONITOR) + 1 ))
+BLOCK_END=$(( (MON_IDX * WS_PER_MONITOR) + WS_PER_MONITOR ))
 
-# Garante que o workspace alvo pertença ao monitor focado antes de alternar/mover
-hyprctl dispatch moveworkspacetomonitor "$TARGET_WS" "$FOCUSED_MON" >/dev/null 2>&1
+# ------------------------------------------------------------------------------
+# Mover com inserção (META+SHIFT+N)
+#
+# A janela focada e' INSERIDA no workspace alvo, como ao reordenar abas:
+#   - Se o alvo estiver vazio, a janela simplesmente vai para la' (buracos sao
+#     permitidos).
+#   - Se a janela NAO for a unica do workspace de origem, o alvo e a cadeia
+#     contigua de workspaces ocupados seguinte sao empurrados +1 (ate' o
+#     primeiro workspace vazio do bloco do monitor).
+#   - Se a janela for a UNICA da origem, a origem vira um espaco livre: a
+#     cadeia entre o alvo e a origem desliza em direcao a ela. Na pratica,
+#     mover para um vizinho troca os dois de lugar.
+#
+# DRY_RUN=1 imprime os comandos em vez de executa-los.
+# ------------------------------------------------------------------------------
+move_with_insert() {
+    local silent="$1"
+    local active_json focused_addr source_ws ws addr k chain_end
+    local -A ws_windows=()
+    local -a cmds=()
+
+    active_json=$(hyprctl -j activewindow 2>/dev/null)
+    focused_addr=$(jq -r '.address // empty' <<< "$active_json" 2>/dev/null)
+    source_ws=$(jq -r '.workspace.id // empty' <<< "$active_json" 2>/dev/null)
+
+    final_cmd="movetoworkspace"
+    [ "$silent" = "1" ] && final_cmd="movetoworkspacesilent"
+
+    # Sem janela focada: comportamento padrao
+    if [ -z "$focused_addr" ] || ! [[ "$source_ws" =~ ^-?[0-9]+$ ]]; then
+        hyprctl dispatch moveworkspacetomonitor "$TARGET_WS" "$FOCUSED_MON" >/dev/null 2>&1
+        hyprctl dispatch "$final_cmd" "$TARGET_WS"
+        return
+    fi
+
+    [ "$source_ws" -eq "$TARGET_WS" ] && return
+
+    # Mapa workspace -> janelas (exceto a focada) dentro do bloco do monitor
+    while IFS=$'\t' read -r ws addr; do
+        [ -n "$addr" ] && ws_windows[$ws]+="$addr "
+    done < <(
+        hyprctl -j clients 2>/dev/null | jq -r \
+            --arg focused "$focused_addr" \
+            --argjson start "$BLOCK_START" \
+            --argjson end "$BLOCK_END" '
+                .[]
+                | select(.mapped == true and .address != $focused)
+                | select(.workspace.id >= $start and .workspace.id <= $end)
+                | [(.workspace.id | tostring), .address]
+                | @tsv
+            '
+    )
+
+    occupied() { [ -n "${ws_windows[$1]:-}" ]; }
+
+    shift_ws() { # move todas as janelas (exceto a focada) de $1 para $2
+        local from="$1" to="$2" a
+        cmds+=("dispatch moveworkspacetomonitor $to $FOCUSED_MON")
+        for a in ${ws_windows[$from]}; do
+            cmds+=("dispatch movetoworkspacesilent $to,address:$a")
+        done
+    }
+
+    local source_in_block=0 source_alone=0
+    if [ "$source_ws" -ge "$BLOCK_START" ] && [ "$source_ws" -le "$BLOCK_END" ]; then
+        source_in_block=1
+        occupied "$source_ws" || source_alone=1
+    fi
+
+    if occupied "$TARGET_WS"; then
+        if [ "$source_alone" -eq 1 ] && [ "$TARGET_WS" -gt "$source_ws" ]; then
+            # Origem fica livre a' esquerda: puxa a cadeia [k..alvo] uma posicao
+            # para a esquerda, parando no primeiro workspace livre (no maximo a origem).
+            chain_end="$TARGET_WS"
+            while [ $((chain_end - 1)) -gt "$source_ws" ] && occupied $((chain_end - 1)); do
+                chain_end=$((chain_end - 1))
+            done
+            for (( k = chain_end; k <= TARGET_WS; k++ )); do
+                shift_ws "$k" $((k - 1))
+            done
+        else
+            # Empurra a cadeia [alvo..k] uma posicao para a direita, parando no
+            # primeiro workspace livre (a origem conta como livre se ficar vazia).
+            chain_end="$TARGET_WS"
+            while [ $((chain_end + 1)) -le "$BLOCK_END" ] && occupied $((chain_end + 1)); do
+                if [ "$source_alone" -eq 1 ] && [ $((chain_end + 1)) -eq "$source_ws" ]; then
+                    break
+                fi
+                chain_end=$((chain_end + 1))
+            done
+            if [ "$chain_end" -ge "$BLOCK_END" ] && occupied "$BLOCK_END"; then
+                command -v notify-send >/dev/null 2>&1 && \
+                    notify-send -a "WillOS" "Workspaces" "Sem espaço livre para empurrar as janelas."
+                return 1
+            fi
+            for (( k = chain_end; k >= TARGET_WS; k-- )); do
+                shift_ws "$k" $((k + 1))
+            done
+        fi
+    fi
+
+    cmds+=("dispatch moveworkspacetomonitor $TARGET_WS $FOCUSED_MON")
+    cmds+=("dispatch $final_cmd $TARGET_WS,address:$focused_addr")
+
+    local batch
+    batch=$(printf '%s ; ' "${cmds[@]}")
+    batch="${batch% ; }"
+
+    if [ "${DRY_RUN:-0}" = "1" ]; then
+        printf '%s\n' "${cmds[@]}"
+    else
+        hyprctl --batch "$batch" >/dev/null
+    fi
+}
 
 case "$ACTION" in
     switch)
+        hyprctl dispatch moveworkspacetomonitor "$TARGET_WS" "$FOCUSED_MON" >/dev/null 2>&1
         hyprctl dispatch focusmonitor "$FOCUSED_MON" >/dev/null 2>&1
         hyprctl dispatch workspace "$TARGET_WS"
         ;;
     move)
-        hyprctl dispatch movetoworkspace "$TARGET_WS"
+        move_with_insert 0
         ;;
     movesilent)
-        hyprctl dispatch movetoworkspacesilent "$TARGET_WS"
+        move_with_insert 1
         ;;
     *)
+        hyprctl dispatch moveworkspacetomonitor "$TARGET_WS" "$FOCUSED_MON" >/dev/null 2>&1
         hyprctl dispatch workspace "$TARGET_WS"
         ;;
 esac
