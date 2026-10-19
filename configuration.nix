@@ -209,6 +209,12 @@ in
     openFirewall = true;
   };
 
+  # Servidor Ollama para execução local de LLMs com aceleração de hardware (Vulkan)
+  services.ollama = {
+    enable = true;
+    package = pkgs.ollama-vulkan;
+  };
+
 
   xdg.portal = {
     enable = true;
