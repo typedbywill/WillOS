@@ -3,11 +3,11 @@
     "agent-proxy": {
       "flake": false,
       "locked": {
-        "lastModified": 1791921035,
-        "narHash": "sha256-lINu6rrLk3eno4NLBw+oyslrYajVWwaIsSK5igwzrPo=",
+        "lastModified": 1792418892,
+        "narHash": "sha256-LmyNTEN2LlcJATAESc2BH0/EBCbry+xsJFivV5PkeS4=",
         "owner": "typedbywill",
         "repo": "agent-proxy",
-        "rev": "02dadb3529f8b7348336f90cd4c391e9f5fa57a0",
+        "rev": "593d9d7ca1eb74a78d4245d6d4d3c3b1772269f1",
         "type": "github"
       },
       "original": {

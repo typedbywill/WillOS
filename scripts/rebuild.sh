@@ -807,6 +807,12 @@ show_preflight_audit() {
     fi
     printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Upgrade de Flake  :${C_RESET} %-62b ${C_BORDER}│${C_RESET}\n" "$flake_str"
 
+    local agent_str="${C_GREEN}${C_BOLD}SIM (Sempre atualiza typedbywill/agent-proxy)${C_RESET}"
+    if [ "$skip_pull" = true ]; then
+        agent_str="${C_YELLOW}Ignorado (Modo offline / sem sincronização remota)${C_RESET}"
+    fi
+    printf "${C_BORDER}│${C_RESET}  • ${C_MUTED}Agent Proxy       :${C_RESET} %-62b ${C_BORDER}│${C_RESET}\n" "$agent_str"
+
     local git_str="${C_CYAN}Pull (rebase) origin/$branch + Push pós-rebuild${C_RESET}"
     if [ "$skip_pull" = true ] && [ "$skip_push" = true ]; then
         git_str="${C_YELLOW}Modo Totalmente Offline (Pull e Push desativados)${C_RESET}"
@@ -1082,13 +1088,27 @@ main() {
     # FASE 2: PREPARAÇÃO DO NIX FLAKE & INTEGRIDADE
     # ==========================================================================
     print_step_header "2" "$total_steps" "📦" "Preparação do Flake & Indexação"
-    # Indexa alterações do repositório para o Flake mantendo arquivos locais ignorados
-    run_with_dynamic_hud "Indexação de Arquivos para o Flake" "Adicionando alterações ao índice Git..." git -C "$REPO_DIR" add -A
-    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
+    # Atualiza sempre o input do projeto agent-proxy para a versão mais recente upstream
+    if [ "$skip_pull" = false ] && [ "$do_flake_update" = false ]; then
+        if run_with_dynamic_hud "Atualização do Agent Proxy" "Verificando novidades em typedbywill/agent-proxy..." nix flake update agent-proxy --flake "$REPO_DIR"; then
+            print_substep "🤖" "${C_GREEN}Projeto agent-proxy sincronizado com a versão mais recente!${C_RESET}"
+        else
+            print_substep "⚠️" "${C_YELLOW}Aviso:${C_RESET} Não foi possível verificar atualizações do agent-proxy (offline ou timeout). Mantendo versão em cache."
+        fi
+    fi
+
+    # Se houver clone local do projeto em Documentos/projetos, sincroniza via Git
+    if [ -d "$HOME/Documents/projetos/pessoal/agent-proxy/.git" ] && [ "$skip_pull" = false ]; then
+        git -C "$HOME/Documents/projetos/pessoal/agent-proxy" pull --rebase >/dev/null 2>&1 || true
+    fi
 
     if [ "$do_flake_update" = true ]; then
-        run_with_dynamic_hud "Atualização de Inputs do Flake" "Executando nix flake update..." nix flake update --flake "$REPO_DIR"
+        run_with_dynamic_hud "Atualização Geral dos Inputs do Flake" "Executando nix flake update..." nix flake update --flake "$REPO_DIR"
     fi
+
+    # Indexa alterações do repositório (incluindo flake.lock atualizado) mantendo arquivos locais ignorados
+    run_with_dynamic_hud "Indexação de Arquivos para o Flake" "Adicionando alterações ao índice Git..." git -C "$REPO_DIR" add -A
+    git -C "$REPO_DIR" reset HEAD hardware-configuration.nix local-config.nix >/dev/null 2>&1 || true
 
     print_step_done "Flake indexado e pronto para compilação."
 
