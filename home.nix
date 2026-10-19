@@ -5,6 +5,7 @@ let
   grok-bot = pkgs.callPackage ./pkgs/grok-bot.nix {};
   winbox = pkgs.callPackage ./pkgs/winbox.nix {};
   mysql-workbench = pkgs.callPackage ./pkgs/mysql-workbench.nix {};
+  lmstudio = pkgs.callPackage ./pkgs/lmstudio.nix {};
 in
 {
   imports = [
