@@ -137,8 +137,22 @@ O primeiro comando deve listar as regras do `.gitignore`; o segundo deve falhar,
 ### ⚙️ Opções Úteis do Comando:
 - `rebuild --info`: Apenas exibe o painel de auditoria de hardware e discos sem aplicar nada.
 - `rebuild -u` / `--upgrade`: Atualiza todos os inputs do Flake (`nix flake update`) antes do rebuild.
-- `rebuild -y` / `--yes`: Pula a confirmação interativa para automações.
+- `rebuild -y` / `--yes`: Pula a confirmação interativa para automações; não aprova atualizações de apps automaticamente.
+- `rebuild --no-app-update-check`: Desativa a consulta de versões upstream de apps dedicados.
 - `rebuild --fast`: Pula a sincronização remota do Git (modo offline/rápido).
+
+Antes do rebuild, o script consulta apps registrados com uma fonte upstream
+conhecida. Nesta fase inicial, somente wacli é consultado. Como a API pública de
+releases não fornece o hash Nix verificado do artefato, a escolha Atualizar fica
+desabilitada para ele: a versão é reportada, mas nenhuma receita é alterada. A
+maioria dos outros programas vem do `nixpkgs` fixado e não pode ser atualizada
+individualmente sem mexer no conjunto de versões do sistema. As escolhas são
+Atualizar, Pular por enquanto, Não perguntar para essa versão e Ignorar sempre
+esse App; opções sem implementação segura não aplicam mudanças. Preferências
+ficam em `~/.local/state/willos/app-update-checker.json`, fora do repositório.
+`--yes`, ausência de TTY e `--info` nunca aplicam atualizações; em modo não
+interativo, as versões novas são apenas reportadas. `--upgrade` continua
+atualizando os inputs do Flake como um todo.
 - `rebuild --boot`: Adiciona a nova geração ao bootloader sem ativar imediatamente.
 - `rebuild --test`: Testa a configuração temporariamente sem alterar o bootloader.
 

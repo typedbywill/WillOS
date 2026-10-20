@@ -879,6 +879,7 @@ print_help() {
     echo -e "${C_BOLD}${C_YELLOW}OPÇÕES DE CONTROLE & SEGURANÇA:${C_RESET}"
     echo -e "  ${C_GREEN}-y, --yes${C_RESET}              Pula a confirmação interativa de segurança pré-rebuild"
     echo -e "  ${C_GREEN}--dry-run, --info${C_RESET}      Apenas audita configuração local, discos e atualizações sem aplicar nada"
+    echo -e "  ${C_GREEN}--no-app-update-check${C_RESET}  Desativa a consulta de atualizações individuais de apps"
     echo ""
     echo -e "${C_BOLD}${C_YELLOW}OPÇÕES DE COMPILAÇÃO & ATUALIZAÇÃO:${C_RESET}"
     echo -e "  ${C_GREEN}-u, --upgrade${C_RESET}          Atualiza todos os inputs do Flake (nix flake update) antes do rebuild"
@@ -916,6 +917,7 @@ main() {
     local action="switch"
     local auto_confirm=false
     local dry_run=false
+    local check_app_updates=true
     local rebuild_args=()
     local commit_msg=""
 
@@ -945,6 +947,9 @@ main() {
                 ;;
             --dry-run|--info)
                 dry_run=true
+                ;;
+            --no-app-update-check)
+                check_app_updates=false
                 ;;
             -H|--host|--host=*|--profile|--profile=*)
                 echo -e "${C_RED}✖ WillOS não usa perfis por máquina.${C_RESET}" >&2
@@ -991,6 +996,18 @@ main() {
     if [ "$dry_run" = true ]; then
         show_preflight_audit "$action" "$do_flake_update" "$skip_pull" "$skip_push"
         exit 0
+    fi
+
+    # Consulta de releases independentes antes da confirmação/rebuild. Em dry-run,
+    # exibe apenas o relatório e não altera receitas nem preferências.
+    if [ "$check_app_updates" = true ] && [ -x "$REPO_DIR/scripts/check-app-updates.sh" ]; then
+        local update_check_args=()
+        if [ "$dry_run" = true ]; then
+            update_check_args+=(--report-only)
+        elif [ "$auto_confirm" = true ] || [ ! -t 0 ]; then
+            update_check_args+=(--non-interactive)
+        fi
+        bash "$REPO_DIR/scripts/check-app-updates.sh" "${update_check_args[@]}" || true
     fi
 
     # Confirmação interativa de segurança se não foi passado --yes

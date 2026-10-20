@@ -299,6 +299,7 @@ in
   xdg.configFile."caelestia/sync-kde.sh" = { source = ./dotfiles/caelestia/sync-kde.sh; force = true; executable = true; };
   xdg.configFile."fish/config.fish" = { source = ./dotfiles/fish/config.fish; force = true; };
   xdg.configFile."scripts/rebuild.sh" = { source = ./scripts/rebuild.sh; force = true; executable = true; };
+  xdg.configFile."scripts/check-app-updates.sh" = { source = ./scripts/check-app-updates.sh; force = true; executable = true; };
   xdg.configFile."fastfetch/config.jsonc" = { source = ./dotfiles/fastfetch/config.jsonc; force = true; };
   xdg.configFile."fastfetch/tux.png" = { source = ./dotfiles/fastfetch/tux.png; force = true; };
   xdg.configFile."fastfetch/tux.txt" = { source = ./dotfiles/fastfetch/tux.txt; force = true; };
