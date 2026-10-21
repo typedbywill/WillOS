@@ -53,6 +53,7 @@ in
     code-cursor
     syncthing
     lmstudio
+    appimage-run
     spotify
     zapzap
     telegram-desktop
