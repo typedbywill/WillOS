@@ -995,19 +995,10 @@ main() {
     # Se modo dry-run / info solicitado, apenas exibe a auditoria e encerra
     if [ "$dry_run" = true ]; then
         show_preflight_audit "$action" "$do_flake_update" "$skip_pull" "$skip_push"
-        exit 0
-    fi
-
-    # Consulta de releases independentes antes da confirmação/rebuild. Em dry-run,
-    # exibe apenas o relatório e não altera receitas nem preferências.
-    if [ "$check_app_updates" = true ] && [ -x "$REPO_DIR/scripts/check-app-updates.sh" ]; then
-        local update_check_args=()
-        if [ "$dry_run" = true ]; then
-            update_check_args+=(--report-only)
-        elif [ "$auto_confirm" = true ] || [ ! -t 0 ]; then
-            update_check_args+=(--non-interactive)
+        if [ "$check_app_updates" = true ] && [ -x "$REPO_DIR/scripts/check-app-updates.sh" ]; then
+            bash "$REPO_DIR/scripts/check-app-updates.sh" --report-only || true
         fi
-        bash "$REPO_DIR/scripts/check-app-updates.sh" "${update_check_args[@]}" || true
+        exit 0
     fi
 
     # Confirmação interativa de segurança se não foi passado --yes
@@ -1100,6 +1091,15 @@ main() {
     fi
 
     print_step_done "Auditoria de repositório concluída."
+
+    # Atualização individual de apps após a confirmação do rebuild e sincronização Git.
+    if [ "$check_app_updates" = true ] && [ -x "$REPO_DIR/scripts/check-app-updates.sh" ]; then
+        if [ "$auto_confirm" = false ] && [ -t 0 ] && [ -t 1 ]; then
+            WILLOS_APP_UPDATES_APPROVED=true bash "$REPO_DIR/scripts/check-app-updates.sh" --apply || true
+        else
+            bash "$REPO_DIR/scripts/check-app-updates.sh" --non-interactive || true
+        fi
+    fi
 
     # ==========================================================================
     # FASE 2: PREPARAÇÃO DO NIX FLAKE & INTEGRIDADE

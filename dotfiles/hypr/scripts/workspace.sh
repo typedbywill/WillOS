@@ -11,7 +11,11 @@
 
 export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin"
 
+<<<<<<< Updated upstream
 ACTION="${1:-switch}" # switch, move, movesilent, insert, insertsilent
+=======
+ACTION="${1:-switch}" # switch, send, move, movesilent
+>>>>>>> Stashed changes
 NUM="${2:-1}"
 
 if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
@@ -37,8 +41,14 @@ if [ -z "$monitors_json" ] || [ "$monitors_json" = "[]" ]; then
     # Fallback se não conseguir consultar monitores
     case "$ACTION" in
         switch) hyprctl dispatch workspace "$NUM" ;;
+<<<<<<< Updated upstream
         move|insert) hyprctl dispatch movetoworkspace "$NUM" ;;
         movesilent|insertsilent) hyprctl dispatch movetoworkspacesilent "$NUM" ;;
+=======
+        send) hyprctl dispatch movetoworkspace "$NUM" ;;
+        move) hyprctl dispatch movetoworkspace "$NUM" ;;
+        movesilent) hyprctl dispatch movetoworkspacesilent "$NUM" ;;
+>>>>>>> Stashed changes
     esac
     exit 0
 fi
@@ -61,7 +71,15 @@ TARGET_WS=$(( (MON_IDX * WS_PER_MONITOR) + NUM ))
 BLOCK_START=$(( (MON_IDX * WS_PER_MONITOR) + 1 ))
 BLOCK_END=$(( (MON_IDX * WS_PER_MONITOR) + WS_PER_MONITOR ))
 
+# Envia a janela focada ao workspace alvo sem reordenar os demais: nenhuma
+# janela e' empurrada e o foco acompanha a janela movida.
+send_window() {
+    hyprctl dispatch moveworkspacetomonitor "$TARGET_WS" "$FOCUSED_MON" >/dev/null 2>&1
+    hyprctl dispatch movetoworkspace "$TARGET_WS"
+}
+
 # ------------------------------------------------------------------------------
+<<<<<<< Updated upstream
 # Mover somente a janela focada (META+SHIFT+N), sem deslocar outras janelas.
 move_focused() {
     local silent="$1" focused_addr final_cmd
@@ -81,6 +99,8 @@ move_focused() {
 }
 
 # ------------------------------------------------------------------------------
+=======
+>>>>>>> Stashed changes
 # Mover com inserção (META+SHIFT+TAB+N)
 #
 # A janela focada e' INSERIDA no workspace alvo, como ao reordenar abas:
@@ -200,6 +220,9 @@ case "$ACTION" in
         hyprctl dispatch moveworkspacetomonitor "$TARGET_WS" "$FOCUSED_MON" >/dev/null 2>&1
         hyprctl dispatch focusmonitor "$FOCUSED_MON" >/dev/null 2>&1
         hyprctl dispatch workspace "$TARGET_WS"
+        ;;
+    send)
+        send_window
         ;;
     move)
         move_focused 0

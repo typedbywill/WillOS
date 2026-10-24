@@ -142,13 +142,13 @@ O primeiro comando deve listar as regras do `.gitignore`; o segundo deve falhar,
 - `rebuild --fast`: Pula a sincronização remota do Git (modo offline/rápido).
 
 Antes do rebuild, o script consulta apps registrados com uma fonte upstream
-conhecida. Nesta fase inicial, somente wacli é consultado. Como a API pública de
-releases não fornece o hash Nix verificado do artefato, a escolha Atualizar fica
-desabilitada para ele: a versão é reportada, mas nenhuma receita é alterada. A
+conhecida. Nesta fase inicial, somente wacli é consultado. Ao escolher Atualizar em um terminal interativo, o checker valida o SHA-256
+do asset Linux amd64 com o digest da API de Releases do GitHub, atualiza a
+versão e o hash fixados em `pkgs/wacli.nix` e o rebuild instala a nova versão. A
 maioria dos outros programas vem do `nixpkgs` fixado e não pode ser atualizada
 individualmente sem mexer no conjunto de versões do sistema. As escolhas são
 Atualizar, Pular por enquanto, Não perguntar para essa versão e Ignorar sempre
-esse App; opções sem implementação segura não aplicam mudanças. Preferências
+esse App. A atualização só ocorre depois de confirmar o rebuild. Preferências
 ficam em `~/.local/state/willos/app-update-checker.json`, fora do repositório.
 `--yes`, ausência de TTY e `--info` nunca aplicam atualizações; em modo não
 interativo, as versões novas são apenas reportadas. `--upgrade` continua

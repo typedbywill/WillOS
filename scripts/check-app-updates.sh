@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# Optional, app-specific upstream checker. Only entries with an explicit,
-# reproducible update strategy are listed here; this is not a nixpkgs updater.
 REPO_DIR="${WILLOS_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 STATE_DIR="$STATE_HOME/willos"
@@ -14,42 +12,59 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         --report-only) REPORT_ONLY=true ;;
         --non-interactive) NON_INTERACTIVE=true ;;
+        --apply) ;;
     esac
     shift
 done
 
-if [ "$REPORT_ONLY" = false ] && [ "$NON_INTERACTIVE" = false ] && { [ ! -t 0 ] || [ ! -t 1 ]; }; then
+if [ "$REPORT_ONLY" = false ] && [ "$NON_INTERACTIVE" = false ] \
+    && [ "${WILLOS_APP_UPDATES_APPROVED:-false}" != true ] \
+    && { [ ! -t 0 ] || [ ! -t 1 ]; }; then
     NON_INTERACTIVE=true
 fi
 
-# Initial allowlist is intentionally narrow: wacli has a stable GitHub release
-# endpoint; other custom apps need independent source and integrity validation.
 APP_ID="wacli"
 APP_NAME="wacli"
-APP_VERSION="$(sed -n 's/^[[:space:]]*version = "\([^"]*\)";.*/\1/p' "$REPO_DIR/pkgs/wacli.nix" | head -n1)"
+RECIPE="$REPO_DIR/pkgs/wacli.nix"
+APP_VERSION="$(sed -n 's/^[[:space:]]*version = "\([^"]*\)";.*/\1/p' "$RECIPE" | head -n1)"
 
 if [ -z "$APP_VERSION" ] || ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
     echo "ℹ️  Verificação de apps ignorada: versão, curl ou jq indisponível."
     exit 0
 fi
 
-latest_tag=""
-latest_tag=$(curl --fail --silent --show-error --location --max-time 8 \
+release_json="$(curl --fail --silent --show-error --location --max-time 8 \
     -H 'Accept: application/vnd.github+json' \
-    'https://api.github.com/repos/openclaw/wacli/releases/latest' 2>/dev/null \
-    | jq -r '.tag_name // empty' 2>/dev/null || true)
-latest_version="${latest_tag#v}"
-
-if [ -z "$latest_version" ]; then
+    'https://api.github.com/repos/openclaw/wacli/releases/latest' 2>/dev/null || true)"
+if [ -z "$release_json" ]; then
     echo "ℹ️  Não foi possível consultar a versão upstream de $APP_NAME; mantendo a configuração atual."
     exit 0
 fi
 
-# Compare numeric dotted versions; if the upstream format changes, fail closed.
-if [[ ! "$APP_VERSION" =~ ^[0-9]+([.][0-9]+)*$ || ! "$latest_version" =~ ^[0-9]+([.][0-9]+)*$ ]]; then
-    echo "ℹ️  Formato de versão não suportado para $APP_NAME ($APP_VERSION → $latest_version); sem alterações."
+latest_tag="$(jq -r '.tag_name // empty' <<< "$release_json" 2>/dev/null || true)"
+latest_version="${latest_tag#v}"
+if [[ ! "$latest_tag" =~ ^v[0-9]+([.][0-9]+)*$ || ! "$APP_VERSION" =~ ^[0-9]+([.][0-9]+)*$ ]]; then
+    echo "ℹ️  Formato de versão não suportado para $APP_NAME ($APP_VERSION → ${latest_tag:-?}); sem alterações."
     exit 0
 fi
+
+asset_json="$(jq -c --arg name "wacli_${latest_version}_linux_amd64.tar.gz" '[.assets[]? | select(.name == $name)]' <<< "$release_json" 2>/dev/null || true)"
+if [ "$(jq 'length' <<< "${asset_json:-[]}" 2>/dev/null || echo 0)" -ne 1 ]; then
+    echo "ℹ️  Asset Linux amd64 ausente ou ambíguo no release de $APP_NAME; sem alterações."
+    exit 0
+fi
+asset_name="$(jq -r '.[0].name' <<< "$asset_json")"
+asset_url="$(jq -r '.[0].browser_download_url // empty' <<< "$asset_json")"
+asset_digest="$(jq -r '.[0].digest // empty' <<< "$asset_json")"
+asset_size="$(jq -r '.[0].size // 0' <<< "$asset_json")"
+if [ "$asset_name" != "wacli_${latest_version}_linux_amd64.tar.gz" ] \
+    || [ "$asset_url" != "https://github.com/openclaw/wacli/releases/download/${latest_tag}/${asset_name}" ] \
+    || [[ ! "$asset_digest" =~ ^sha256:[0-9a-f]{64}$ ]] \
+    || [[ ! "$asset_size" =~ ^[1-9][0-9]*$ ]]; then
+    echo "ℹ️  Metadados de integridade inválidos para $APP_NAME; sem alterações."
+    exit 0
+fi
+expected_sha256="${asset_digest#sha256:}"
 
 version_gt() {
     local left="$1" right="$2"
@@ -57,30 +72,16 @@ version_gt() {
     local -a lparts rparts
     read -r -a lparts <<< "$left"
     read -r -a rparts <<< "$right"
-    local i l r
-    local count=${#lparts[@]}
+    local i l r count=${#lparts[@]}
     [ "${#rparts[@]}" -gt "$count" ] && count=${#rparts[@]}
     for ((i=0; i<count; i++)); do
         l=${lparts[i]:-0}; r=${rparts[i]:-0}
-        # Avoid octal interpretation of leading zeroes.
         l=$((10#$l)); r=$((10#$r))
-        if (( l > r )); then return 0; fi
-        if (( l < r )); then return 1; fi
+        (( l > r )) && return 0
+        (( l < r )) && return 1
     done
     return 1
 }
-
-if ! version_gt "$latest_version" "$APP_VERSION"; then
-    [ "$REPORT_ONLY" = true ] && echo "✓ $APP_NAME está atualizado ($APP_VERSION)."
-    exit 0
-fi
-
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "ℹ️  Nova versão de $APP_NAME: $latest_version (atual: $APP_VERSION); python3 indisponível para preferências locais."
-    exit 0
-fi
-
-mkdir -p "$STATE_DIR" 2>/dev/null || true
 
 state_get() {
     python3 -I - "$STATE_FILE" "$APP_ID" "$latest_version" <<'PY'
@@ -138,6 +139,15 @@ finally:
 PY
 }
 
+if ! version_gt "$latest_version" "$APP_VERSION"; then
+    [ "$REPORT_ONLY" = true ] && echo "✓ $APP_NAME está atualizado ($APP_VERSION)."
+    exit 0
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "ℹ️  Nova versão de $APP_NAME: $APP_VERSION → $latest_version; python3 indisponível para preferências locais."
+    exit 0
+fi
 preference="$(state_get)"
 if [ "$preference" = ignored ]; then
     [ "$REPORT_ONLY" = true ] && echo "↷ $APP_NAME: ignorado permanentemente nas preferências locais."
@@ -149,7 +159,7 @@ fi
 
 echo "⬆️  Atualização disponível: $APP_NAME $APP_VERSION → $latest_version"
 if [ "$REPORT_ONLY" = true ]; then
-    echo "   Atualizador dedicado: wacli (GitHub Releases); nenhuma alteração feita no modo --info."
+    echo "   Asset verificado pelo digest SHA-256 publicado pela API do GitHub; modo somente relatório."
     exit 0
 fi
 if [ "$NON_INTERACTIVE" = true ]; then
@@ -162,8 +172,57 @@ choice=""
 read -r choice || choice=2
 case "$choice" in
     1)
-        echo "   Atualizador individual de wacli ainda não está habilitado: a API de releases não fornece o hash Nix validado."
-        echo "   Nenhuma receita foi alterada. A versão permanece pendente para nova consulta."
+        if [ "${WILLOS_APP_UPDATES_APPROVED:-false}" != true ]; then
+            echo "   A receita não foi alterada: confirme primeiro o rebuild do sistema."
+            exit 0
+        fi
+        if ! command -v tar >/dev/null 2>&1 || ! command -v sha256sum >/dev/null 2>&1; then
+            echo "   Não há ferramentas para validar o asset; receita não alterada."
+            exit 0
+        fi
+        tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/willos-wacli-update.XXXXXX")" || exit 0
+        trap 'rm -rf "$tmp_dir"' EXIT
+        archive="$tmp_dir/$asset_name"
+        if ! curl --fail --silent --show-error --location --max-time 90 "$asset_url" -o "$archive"; then
+            echo "   Falha ao baixar o asset; receita não alterada."
+            exit 0
+        fi
+        actual_size="$(wc -c < "$archive" | tr -d '[:space:]')"
+        actual_sha256="$(sha256sum "$archive" | awk '{print $1}')"
+        if [ "$actual_size" != "$asset_size" ] || [ "$actual_sha256" != "$expected_sha256" ]; then
+            echo "   O asset não corresponde ao tamanho/digest do GitHub; receita não alterada."
+            exit 0
+        fi
+        if ! tar -tzf "$archive" | grep -Eq '(^|/)wacli$'; then
+            echo "   Arquivo sem o binário esperado; receita não alterada."
+            exit 0
+        fi
+        old_sha256="$(sed -n 's/^[[:space:]]*sha256 = "\([^"]*\)";.*/\1/p' "$RECIPE" | head -n1)"
+        if [ -z "$old_sha256" ] || ! grep -Fq "version = \"$APP_VERSION\";" "$RECIPE"; then
+            echo "   A receita mudou inesperadamente; atualização cancelada sem sobrescrever alterações."
+            exit 0
+        fi
+        tmp_recipe="$(mktemp "$(dirname "$RECIPE")/.wacli.nix.XXXXXX")" || exit 0
+        if ! python3 -I - "$RECIPE" "$tmp_recipe" "$APP_VERSION" "$latest_version" "$old_sha256" "$expected_sha256" <<'PY'
+import pathlib, re, sys
+source, target, old_version, new_version, old_hash, new_hash = sys.argv[1:]
+text = pathlib.Path(source).read_text()
+version_pattern = re.compile(r'(?m)^(\s*version = )"' + re.escape(old_version) + r'";\s*$')
+hash_pattern = re.compile(r'(?m)^(\s*sha256 = )"' + re.escape(old_hash) + r'";\s*$')
+if len(version_pattern.findall(text)) != 1 or len(hash_pattern.findall(text)) != 1:
+    raise SystemExit("Recipe fields are ambiguous")
+text = version_pattern.sub(lambda m: m.group(1) + '"' + new_version + '";', text, count=1)
+text = hash_pattern.sub(lambda m: m.group(1) + '"' + new_hash + '";', text, count=1)
+pathlib.Path(target).write_text(text)
+PY
+        then
+            rm -f "$tmp_recipe"
+            echo "   Não foi possível atualizar os pins; receita preservada."
+            exit 0
+        fi
+        chmod --reference="$RECIPE" "$tmp_recipe" 2>/dev/null || chmod 0644 "$tmp_recipe"
+        mv -f "$tmp_recipe" "$RECIPE"
+        echo "   Receita atualizada: wacli $APP_VERSION → $latest_version; o rebuild prosseguirá para instalar a nova versão."
         ;;
     2|"")
         echo "   Pulado por enquanto; será consultado novamente no próximo rebuild."
