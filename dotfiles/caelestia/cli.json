@@ -9,7 +9,7 @@
   "toggles": {
     "music": {
       "spotify": {
-        "enable": true,
+        "enable": false,
         "match": [
           { "class": "Spotify" },
           { "class": "spotify" },

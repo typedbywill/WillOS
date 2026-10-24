@@ -8,10 +8,6 @@ let
   lmstudio = pkgs.callPackage ./pkgs/lmstudio.nix {};
 in
 {
-  imports = [
-    ./modules/spotify-inactivity-watcher.nix
-  ];
-
   systemd.user.services.agent-proxy = {
     Unit = {
       Description = "Agent Proxy";
@@ -54,7 +50,6 @@ in
     syncthing
     lmstudio
     appimage-run
-    spotify
     zapzap
     telegram-desktop
     papirus-icon-theme

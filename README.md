@@ -56,8 +56,7 @@ As regras são intencionais:
 │   ├── local-settings.nix     # Contrato genérico das opções locais
 │   ├── gpu.nix                # Gerenciador dinâmico de drivers gráficos (Intel / AMD / Nvidia)
 │   ├── auto-sync.nix          # Sincronização e rebuild automáticos
-│   ├── sunshine.nix           # Servidor opcional de streaming Sunshine
-│   └── spotify-inactivity-watcher.nix # Watcher de inatividade do Spotify
+│   └── sunshine.nix           # Servidor opcional de streaming Sunshine
 └── dotfiles/                  # Arquivos de configuração dos utilitários
     ├── hypr/
     │   ├── hyprland.conf      # Configuração do compositor Hyprland

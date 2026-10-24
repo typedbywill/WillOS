@@ -48,6 +48,6 @@
     "hideNotifs": true
   },
   "services": {
-    "defaultPlayer": "Spotify"
+    "defaultPlayer": ""
   }
 }
