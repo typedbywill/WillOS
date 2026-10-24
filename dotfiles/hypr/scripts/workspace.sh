@@ -11,11 +11,7 @@
 
 export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin"
 
-<<<<<<< Updated upstream
-ACTION="${1:-switch}" # switch, move, movesilent, insert, insertsilent
-=======
-ACTION="${1:-switch}" # switch, send, move, movesilent
->>>>>>> Stashed changes
+ACTION="${1:-switch}" # switch, send, move, movesilent, insert, insertsilent
 NUM="${2:-1}"
 
 if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
@@ -41,14 +37,8 @@ if [ -z "$monitors_json" ] || [ "$monitors_json" = "[]" ]; then
     # Fallback se não conseguir consultar monitores
     case "$ACTION" in
         switch) hyprctl dispatch workspace "$NUM" ;;
-<<<<<<< Updated upstream
-        move|insert) hyprctl dispatch movetoworkspace "$NUM" ;;
+        send|move|insert) hyprctl dispatch movetoworkspace "$NUM" ;;
         movesilent|insertsilent) hyprctl dispatch movetoworkspacesilent "$NUM" ;;
-=======
-        send) hyprctl dispatch movetoworkspace "$NUM" ;;
-        move) hyprctl dispatch movetoworkspace "$NUM" ;;
-        movesilent) hyprctl dispatch movetoworkspacesilent "$NUM" ;;
->>>>>>> Stashed changes
     esac
     exit 0
 fi
@@ -79,7 +69,6 @@ send_window() {
 }
 
 # ------------------------------------------------------------------------------
-<<<<<<< Updated upstream
 # Mover somente a janela focada (META+SHIFT+N), sem deslocar outras janelas.
 move_focused() {
     local silent="$1" focused_addr final_cmd
@@ -99,8 +88,6 @@ move_focused() {
 }
 
 # ------------------------------------------------------------------------------
-=======
->>>>>>> Stashed changes
 # Mover com inserção (META+SHIFT+TAB+N)
 #
 # A janela focada e' INSERIDA no workspace alvo, como ao reordenar abas:
