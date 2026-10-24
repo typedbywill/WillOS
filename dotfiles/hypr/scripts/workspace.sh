@@ -11,7 +11,7 @@
 
 export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin"
 
-ACTION="${1:-switch}" # switch, move, movesilent
+ACTION="${1:-switch}" # switch, move, movesilent, insert, insertsilent
 NUM="${2:-1}"
 
 if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
@@ -37,8 +37,8 @@ if [ -z "$monitors_json" ] || [ "$monitors_json" = "[]" ]; then
     # Fallback se não conseguir consultar monitores
     case "$ACTION" in
         switch) hyprctl dispatch workspace "$NUM" ;;
-        move) hyprctl dispatch movetoworkspace "$NUM" ;;
-        movesilent) hyprctl dispatch movetoworkspacesilent "$NUM" ;;
+        move|insert) hyprctl dispatch movetoworkspace "$NUM" ;;
+        movesilent|insertsilent) hyprctl dispatch movetoworkspacesilent "$NUM" ;;
     esac
     exit 0
 fi
@@ -62,7 +62,26 @@ BLOCK_START=$(( (MON_IDX * WS_PER_MONITOR) + 1 ))
 BLOCK_END=$(( (MON_IDX * WS_PER_MONITOR) + WS_PER_MONITOR ))
 
 # ------------------------------------------------------------------------------
-# Mover com inserção (META+SHIFT+N)
+# Mover somente a janela focada (META+SHIFT+N), sem deslocar outras janelas.
+move_focused() {
+    local silent="$1" focused_addr final_cmd
+    focused_addr=$(hyprctl -j activewindow 2>/dev/null | jq -r '.address // empty')
+    [ -n "$focused_addr" ] || return 0
+
+    final_cmd="movetoworkspace"
+    [ "$silent" = "1" ] && final_cmd="movetoworkspacesilent"
+
+    if [ "${DRY_RUN:-0}" = "1" ]; then
+        printf 'dispatch moveworkspacetomonitor %s %s\n' "$TARGET_WS" "$FOCUSED_MON"
+        printf 'dispatch %s %s,address:%s\n' "$final_cmd" "$TARGET_WS" "$focused_addr"
+    else
+        hyprctl dispatch moveworkspacetomonitor "$TARGET_WS" "$FOCUSED_MON" >/dev/null 2>&1
+        hyprctl dispatch "$final_cmd" "$TARGET_WS,address:$focused_addr"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Mover com inserção (META+SHIFT+TAB+N)
 #
 # A janela focada e' INSERIDA no workspace alvo, como ao reordenar abas:
 #   - Se o alvo estiver vazio, a janela simplesmente vai para la' (buracos sao
@@ -78,7 +97,7 @@ BLOCK_END=$(( (MON_IDX * WS_PER_MONITOR) + WS_PER_MONITOR ))
 # ------------------------------------------------------------------------------
 move_with_insert() {
     local silent="$1"
-    local active_json focused_addr source_ws ws addr k chain_end
+    local active_json focused_addr source_ws ws addr k chain_end final_cmd
     local -A ws_windows=()
     local -a cmds=()
 
@@ -183,9 +202,15 @@ case "$ACTION" in
         hyprctl dispatch workspace "$TARGET_WS"
         ;;
     move)
-        move_with_insert 0
+        move_focused 0
         ;;
     movesilent)
+        move_focused 1
+        ;;
+    insert)
+        move_with_insert 0
+        ;;
+    insertsilent)
         move_with_insert 1
         ;;
     *)
