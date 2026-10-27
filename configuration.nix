@@ -291,8 +291,10 @@ in
       patches = (old.patches or []) ++ [
         ./patches/caelestia-shell-mru.patch
         ./patches/caelestia-shell-lockscreen-media.patch
+        ./patches/caelestia-shell-lock-mute.patch
       ];
     }))
+    (pkgs.writeShellScriptBin "caelestia-lock-audio" (builtins.readFile ./dotfiles/hypr/scripts/caelestia-lock-audio.sh))
     # Os atalhos Super+L e Super+Space usam o executável `caelestia`.
     # `with-cli` fornece o shell, mas não instala esse cliente de controle.
     inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.default

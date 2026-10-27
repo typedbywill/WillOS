@@ -1,0 +1,27 @@
+--- a/modules/lock/Lock.qml
++++ b/modules/lock/Lock.qml
+@@ -20,6 +20,24 @@
+         }
+     }
+ 
++    Connections {
++        target: lock
++
++        function onLockedChanged(): void {
++            if (lock.locked) {
++                Quickshell.execDetached(["caelestia-lock-audio", "mute"]);
++            } else {
++                Quickshell.execDetached(["caelestia-lock-audio", "restore"]);
++            }
++        }
++    }
++
++    Component.onDestruction: {
++        if (lock.locked) {
++            Quickshell.execDetached(["caelestia-lock-audio", "restore"]);
++        }
++    }
++
+     Pam {
+         id: pam
+ 

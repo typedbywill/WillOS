@@ -281,6 +281,7 @@ in
     }
   '';
   xdg.configFile."hypr/scripts/lock-with-dpms.sh" = { source = ./dotfiles/hypr/scripts/lock-with-dpms.sh; force = true; executable = true; };
+  xdg.configFile."hypr/scripts/caelestia-lock-audio.sh" = { source = ./dotfiles/hypr/scripts/caelestia-lock-audio.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/auto-virtual-display.sh" = { source = ./dotfiles/hypr/scripts/auto-virtual-display.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/workspace-compactor.sh" = { source = ./dotfiles/hypr/scripts/workspace-compactor.sh; force = true; executable = true; };
   xdg.configFile."hypr/scripts/workspace.sh" = { source = ./dotfiles/hypr/scripts/workspace.sh; force = true; executable = true; };
