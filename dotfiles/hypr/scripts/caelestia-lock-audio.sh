@@ -7,9 +7,11 @@
 
 set -euo pipefail
 
-export PATH="$PATH:/run/current-system/sw/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin"
+export PATH="${PATH:-}:/run/current-system/sw/bin:/etc/profiles/per-user/${USER:-william}/bin:${HOME:-/home/${USER:-william}}/.local/bin:${HOME:-/home/${USER:-william}}/.nix-profile/bin"
 
-STATE_FILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/caelestia-lock-audio-state.json"
+USER_UID=$(id -u 2>/dev/null || echo 1000)
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$USER_UID}"
+STATE_FILE="${RUNTIME_DIR}/caelestia-lock-audio-state.json"
 
 mute_all() {
     # Se o arquivo de estado já existe, a sessão já está bloqueada/mutada.

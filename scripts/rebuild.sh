@@ -1205,7 +1205,7 @@ main() {
             if grep -qiE "SIGKILL|died with <Signals\.SIGKILL|out of memory|oom-killer|Killed" "$persistent_log" 2>/dev/null; then
                 is_oom=true
             fi
-            if grep -qiE "efiSysMountPoint.*not a mounted partition|Failed to install bootloader|check-mountpoints" "$persistent_log" 2>/dev/null; then
+            if grep -qiE "efiSysMountPoint.*not a mounted partition|Failed to install bootloader|builder for .*check-mountpoints\.drv.*failed" "$persistent_log" 2>/dev/null; then
                 is_boot_err=true
             fi
             if grep -qiE "narHash mismatch|hash mismatch.*(devimages|apple)|devimages-cdn\.apple\.com|apple-fonts" "$persistent_log" 2>/dev/null; then
@@ -1379,6 +1379,11 @@ main() {
     # Sincronização da paleta Caelestia/KDE
     if [ -f "$REPO_DIR/dotfiles/caelestia/sync-kde.sh" ]; then
         bash "$REPO_DIR/dotfiles/caelestia/sync-kde.sh" >/dev/null 2>&1 || true
+    fi
+
+    # Reinicia o Caelestia Shell para carregar a nova versão/patches sem incompatibilidade de caminho
+    if command -v caelestia >/dev/null 2>&1 && pgrep -x quickshell >/dev/null 2>&1; then
+        caelestia shell -r >/dev/null 2>&1 || true
     fi
 
     # ==========================================================================

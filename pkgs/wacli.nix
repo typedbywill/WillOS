@@ -22,7 +22,6 @@ stdenv.mkDerivation rec {
 
     patchelf \
       --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
-      --set-rpath "${lib.makeLibraryPath [ stdenv.cc.libc ]}" \
       $out/bin/wacli
 
     installShellCompletion --cmd wacli \
