@@ -1382,8 +1382,9 @@ main() {
     fi
 
     # Reinicia o Caelestia Shell para carregar a nova versão/patches sem incompatibilidade de caminho
-    if command -v caelestia >/dev/null 2>&1 && pgrep -x quickshell >/dev/null 2>&1; then
-        caelestia shell -r >/dev/null 2>&1 || true
+    if command -v caelestia >/dev/null 2>&1 && pgrep -f quickshell >/dev/null 2>&1; then
+        pkill -f quickshell 2>/dev/null || true
+        caelestia shell -d >/dev/null 2>&1 || true
     fi
 
     # ==========================================================================
