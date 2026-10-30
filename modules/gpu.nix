@@ -68,6 +68,14 @@ in
 
       hardware.nvidia-container-toolkit.enable = cfg.nvidia.enableContainerToolkit;
 
+      # Evita falha no switch-to-configuration durante atualização do driver NVIDIA.
+      # O módulo do kernel ativo rejeita chamadas NVML da nova biblioteca ('Driver/library version mismatch').
+      # O serviço roda normalmente no boot seguinte quando o novo módulo do kernel é carregado.
+      systemd.services.nvidia-container-toolkit-cdi-generator = lib.mkIf cfg.nvidia.enableContainerToolkit {
+        restartIfChanged = false;
+        stopIfChanged = false;
+      };
+
       # O módulo registra os dispositivos NVIDIA; este helper privilegiado cria
       # os nós /dev/nvidia* necessários para CUDA e nvidia-smi.
       environment.systemPackages = [ pkgs.nvidia-modprobe ];

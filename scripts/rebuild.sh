@@ -1201,6 +1201,7 @@ main() {
         local is_oom=false
         local is_boot_err=false
         local is_hash_err=false
+        local is_nvidia_err=false
         if [ -f "$persistent_log" ]; then
             if grep -qiE "SIGKILL|died with <Signals\.SIGKILL|out of memory|oom-killer|Killed" "$persistent_log" 2>/dev/null; then
                 is_oom=true
@@ -1210,6 +1211,9 @@ main() {
             fi
             if grep -qiE "narHash mismatch|hash mismatch.*(devimages|apple)|devimages-cdn\.apple\.com|apple-fonts" "$persistent_log" 2>/dev/null; then
                 is_hash_err=true
+            fi
+            if grep -qiE "Driver/library version mismatch|nvidia-container-toolkit-cdi-generator\.service.*failed|Failed to start Container Device Interface \(CDI\) for Nvidia generator" "$persistent_log" 2>/dev/null; then
+                is_nvidia_err=true
             fi
         fi
 
@@ -1250,6 +1254,14 @@ main() {
             echo -e "${C_RED}║${C_RESET}         ${C_BOLD}sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile${C_RESET}          ${C_RED}║${C_RESET}"
             echo -e "${C_RED}║${C_RESET}         ${C_BOLD}sudo mkswap /swapfile && sudo swapon /swapfile${C_RESET}                      ${C_RED}║${C_RESET}"
             echo -e "${C_RED}║${C_RESET}      2. ${C_CYAN}Execute limitando a 1 job:${C_RESET} ${C_BOLD}rebuild --max-jobs 1${C_RESET}                         ${C_RED}║${C_RESET}"
+        elif [ "$is_nvidia_err" = true ]; then
+            echo -e "${C_RED}╠─────────────────────────────────────────────────────────────────────────────╣${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}  🚨  ${C_BOLD}${C_YELLOW}ATUALIZAÇÃO DE DRIVER NVIDIA: REINICIALIZAÇÃO NECESSÁRIA${C_RESET}                 ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}O driver NVIDIA foi atualizado no sistema, mas o módulo antigo ainda${C_RESET}    ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_YELLOW}está em uso pelo kernel ('Driver/library version mismatch').${C_RESET}            ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      ${C_GREEN}✔ A nova geração foi gravada no bootloader com sucesso!${C_RESET}                 ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}      💡 ${C_BOLD}Basta reiniciar o computador para carregar o novo driver:${C_RESET}          ${C_RED}║${C_RESET}"
+            echo -e "${C_RED}║${C_RESET}         ${C_BOLD}systemctl reboot${C_RESET}                                                    ${C_RED}║${C_RESET}"
         fi
 
         echo -e "${C_RED}╚═════════════════════════════════════════════════════════════════════════════╝${C_RESET}\n"
