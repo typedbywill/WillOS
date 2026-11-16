@@ -2,10 +2,10 @@
 
 stdenv.mkDerivation rec {
   pname = "wacli";
-  version = "0.25.1";
+  version = "0.26.1";
   src = fetchurl {
     url = "https://github.com/openclaw/wacli/releases/download/v${version}/wacli_${version}_linux_amd64.tar.gz";
-    sha256 = "53bbb450f0a47e3b080173d61fd6cec72241d8065bee17e592275983b7abd281";
+    sha256 = "515405c5a33c7f651a368484740db662736f50c275be5a0504fb0a84dce47013";
   };
 
   sourceRoot = ".";

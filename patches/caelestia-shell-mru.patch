@@ -1,15 +1,36 @@
 --- a/services/Players.qml
 +++ b/services/Players.qml
-@@ -12,7 +12,7 @@
+@@ -13,8 +13,28 @@
      id: root
  
      readonly property list<MprisPlayer> list: Mpris.players.values
 -    readonly property MprisPlayer active: props.manualActive ?? list.find(p => getIdentity(p) === GlobalConfig.services.defaultPlayer) ?? list[0] ?? null
 +    readonly property MprisPlayer active: (props.manualActive && list.includes(props.manualActive)) ? props.manualActive : (list.find(p => getIdentity(p) === GlobalConfig.services.defaultPlayer) ?? list[0] ?? null)
      property alias manualActive: props.manualActive
++    property var playingHistory: []
++
++    function rememberPlaying(player: MprisPlayer): void {
++        playingHistory = playingHistory.filter(p => p && p !== player && list.includes(p));
++        playingHistory.push(player);
++        props.manualActive = player;
++    }
++
++    function selectPlayingFallback(): void {
++        playingHistory = playingHistory.filter(p => p && list.includes(p) && p.isPlaying);
++        const fallback = playingHistory[playingHistory.length - 1] ?? list.find(p => p.isPlaying);
++        if (fallback)
++            props.manualActive = fallback;
++    }
++
++    onListChanged: {
++        playingHistory = playingHistory.filter(p => p && list.includes(p));
++        if (!props.manualActive || !list.includes(props.manualActive))
++            selectPlayingFallback();
++    }
  
      // Dedup key for progressive metadata (e.g. mpv-mpris/yt-dlp player fills title then artist later).
-@@ -90,6 +90,20 @@
+     property string lastNowPlayingKey: ""
+@@ -91,6 +111,27 @@
          reloadableId: "players"
      }
  
@@ -21,8 +42,15 @@
 +            target: modelData
 +
 +            function onIsPlayingChanged(): void {
-+                if (modelData && modelData.isPlaying)
-+                    props.manualActive = modelData;
++                if (modelData.isPlaying)
++                    root.rememberPlaying(modelData);
++                else if (root.active === modelData)
++                    root.selectPlayingFallback();
++            }
++
++            Component.onCompleted: {
++                if (modelData.isPlaying)
++                    root.rememberPlaying(modelData);
 +            }
 +        }
 +    }
@@ -30,7 +58,7 @@
      // qmllint disable unresolved-type
      CustomShortcut {
          // qmllint enable unresolved-type
-@@ -178,6 +192,12 @@
+@@ -179,6 +220,12 @@
              root.active?.stop();
          }
  
