@@ -269,7 +269,7 @@ in
     fuzzel
     grim
     slurp
-    swappy
+    satty
     pavucontrol
     brightnessctl
     ddcutil
