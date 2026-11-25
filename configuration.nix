@@ -17,6 +17,18 @@ in
   boot.loader.efi.canTouchEfiVariables = true;
   boot.supportedFilesystems = [ "ntfs" ];
 
+  # Otimização de rede para fibra Gigabit e peers de alta latência (TCP BBR + buffers)
+  boot.kernelModules = [ "tcp_bbr" ];
+  boot.kernel.sysctl = {
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
+    "net.core.rmem_max" = 16777216;
+    "net.core.wmem_max" = 16777216;
+    "net.ipv4.tcp_rmem" = "4096 131072 16777216";
+    "net.ipv4.tcp_wmem" = "4096 65536 16777216";
+    "net.core.netdev_max_backlog" = 4096;
+  };
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   networking.hostName = lib.mkDefault "willos";
   networking.networkmanager.enable = true;
