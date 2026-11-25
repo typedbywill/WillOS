@@ -24,8 +24,15 @@ in
     enable = true;
     checkReversePath = "loose";
     trustedInterfaces = [ "tailscale0" ];
-    allowedTCPPorts = [ 21118 ];
-    allowedUDPPorts = [ 21118 ];
+    # 21118: RustDesk/serviço existente | 20167: qBittorrent (TCP/uTP/DHT) | 1900: UPnP/SSDP
+    allowedTCPPorts = [ 21118 20167 ];
+    allowedUDPPorts = [ 21118 20167 1900 ];
+    # Permite respostas unicast de descoberta UPnP/SSDP vindas do roteador local
+    extraCommands = ''
+      iptables -A nixos-fw -p udp --sport 1900 -s 10.0.0.0/8 -j nixos-fw-accept
+      iptables -A nixos-fw -p udp --sport 1900 -s 192.168.0.0/16 -j nixos-fw-accept
+      iptables -A nixos-fw -p udp --sport 1900 -s 172.16.0.0/12 -j nixos-fw-accept
+    '';
   };
 
   # Habilita o serviço Tailscale
